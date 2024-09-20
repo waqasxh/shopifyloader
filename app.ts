@@ -1,3 +1,6 @@
+import { logger } from "./logger";
 let greeting: string = "Hello Type Script";
 
-console.log(`This is my first TYPE Script : ${greeting}`);
+logger.info(`This is my first TYPE Script : ${greeting}`);
+
+//console.log(`This is my first TYPE Script : ${greeting}`);

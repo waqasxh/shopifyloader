@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "pino": "^9.4.0",
+    "pino-pretty": "^11.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.5"
+  }
+}
