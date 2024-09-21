@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "csv": "^6.3.10",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2"
   },

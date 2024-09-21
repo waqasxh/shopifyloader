@@ -1,6 +1,7 @@
 import { logger } from "./logger";
-let greeting: string = "Hello Type Script";
+import ekProcessor from "./processors/ek";
 
-logger.info(`This is my first TYPE Script : ${greeting}`);
+let name: string = "Shopify Loader";
+logger.info(`Execution of  ${name} Started.`);
 
-//console.log(`This is my first TYPE Script : ${greeting}`);
+const records = ekProcessor();
