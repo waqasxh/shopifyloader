@@ -17,9 +17,6 @@ const pinoOptions = {
                 node_version: process.version,
             };
         },
-        level: (label) => {
-            return { level: label.toUpperCase() };
-        },
     },
     timestamp: pino_1.default.stdTimeFunctions.isoTime,
     transport: {
@@ -35,3 +32,4 @@ const pinoOptions = {
     },
 };
 exports.logger = (0, pino_1.default)(pinoOptions);
+//# sourceMappingURL=logger.js.map

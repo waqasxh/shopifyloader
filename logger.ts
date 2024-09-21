@@ -1,3 +1,4 @@
+import { trace } from "console";
 import pino, { LoggerOptions } from "pino";
 
 const logdir: string = "./logs";
@@ -14,9 +15,6 @@ const pinoOptions: LoggerOptions = {
         host: bindings.hostname,
         node_version: process.version,
       };
-    },
-    level: (label: string) => {
-      return { level: label.toUpperCase() };
     },
   },
   timestamp: pino.stdTimeFunctions.isoTime,

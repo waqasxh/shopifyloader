@@ -8,3 +8,4 @@ const ek_1 = __importDefault(require("./processors/ek"));
 let name = "Shopify Loader";
 logger_1.logger.info(`Execution of  ${name} Started.`);
 const records = (0, ek_1.default)();
+//# sourceMappingURL=app.js.map

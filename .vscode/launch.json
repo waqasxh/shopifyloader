@@ -12,7 +12,8 @@
       "program": "${workspaceFolder}\\js\\app.js",
       "outFiles": ["${workspaceFolder}/**/*.js"],
       "preLaunchTask": "Compile TypeScript",
-      "internalConsoleOptions": "openOnSessionStart"
+      "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std"
     }
   ]
 }
