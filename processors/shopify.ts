@@ -16,8 +16,8 @@ const client = createGraphQLClient({
   retries: 1,
 });
 
-async function retrievProductById(id: any): Promise<any> {
-  const productQuery = `query productWithId ($productId:ID!)
+async function retrievProductById(id: string): Promise<any> {
+  const query = `query productWithId ($productId:ID!)
       {
       product(id: $productId) {
         id
@@ -25,13 +25,47 @@ async function retrievProductById(id: any): Promise<any> {
         status
       }
     }`;
-  const { data, errors, extensions } = await client.request(productQuery, {
+  const { data, errors, extensions } = await client.request(query, {
     variables: {
-      productId: "gid://shopify/Product/9179310391638",
+      productId: id,
     },
   });
 }
 
-// other target fields that aren't in the source should be left empty
+async function unpublishProductById(
+  productId: string,
+  publicationId: string,
+  publicationDate: string
+): Promise<any> {
+  const mutation = `mutation publishableUnpublish($id: ID!, $input: [PublicationInput!]!) {
+  publishableUnpublish(id: $id, input: $input) {
+    publishable {
+      availablePublicationsCount {
+        count
+      }
+      resourcePublicationsCount {
+        count
+      }
+    }
+    shop {
+      publicationCount
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+`;
+  const { data, errors, extensions } = await client.request(mutation, {
+    variables: {
+      id: productId,
+      input: {
+        publicationId: publicationId,
+        publishDate: publicationDate,
+      },
+    },
+  });
+}
 
-export { retrievProductById };
+export { retrievProductById, unpublishProductById };
