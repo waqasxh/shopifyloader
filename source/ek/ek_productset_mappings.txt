@@ -3,11 +3,12 @@
 //files [FileSetInput!]
 //handle String -> "Handle"
 //metafields [MetafieldInput!] - skip for now
-//productOptions [OptionSetInput!] - skip for now
+//productOptions [OptionSetInput!] -> "Option1 Name", "Option1 Value", "Option2 Name", "Option2 Value", "Option3 Name", "Option3 Value"
 //seo SEOInput - skip for now
+//tags TagsInput - skip for now
 //status ProductStatus -> ACTIVE
 //title String -> "Title"
-//variants [ProductVariantSetInput!] -> "Variant Inventory Qty", "Variant Weight", "Variant Price", "Variant Image", "Option1 Name", "Option1 Value", "Option2 Name", "Option2 Value", "Option3 Name", "Option3 Value"
+//variants [ProductVariantSetInput!] -> "Variant Inventory Qty", "Variant Weight", "Variant Price", "Variant Image"
 //vendor String -> EK
   
 

@@ -157,7 +157,17 @@ async function addProductSet(): Promise<any> {
   });
 }
 
-async function addProductSetEx(): Promise<any> {
+async function addProductSetEx(
+  collections: any[],
+  bodyHtml: string,
+  files: any[],
+  handle: string,
+  productOptions: any[],
+  status: string,
+  title: string,
+  variants: any[],
+  vendor: string
+): Promise<any> {
   const mutation = `mutation createProduct($productSet: ProductSetInput!, $synchronous: Boolean!) {
   productSet(synchronous: $synchronous, input: $productSet) {
     product {
@@ -192,62 +202,24 @@ async function addProductSetEx(): Promise<any> {
     }
   }
 }`;
-  const { data, errors, extensions } = await client.request(mutation, {
+  const result = await client.request(mutation, {
     variables: {
       synchronous: true,
       productSet: {
-        collections: [
-          "gid://shopify/Collection/631220535638", //deals & clearance
-          "gid://shopify/Collection/631220633942", //new arivals
-          "gid://shopify/Collection/631220765014", //fashion & accessories
-        ],
-        descriptionHtml: "Keep your hands toasty in the winter",
-        files: [
-          {
-            originalSource:
-              "https://cdn.shopify.com/s/files/1/0558/8628/2915/products/navy_aa6195b6-2585-4b4e-b1c2-f4b8ff904b42.jpg?v=1650971345",
-          },
-        ],
-        handle: "winter-gloves",
-        metafields: [],
-        productOptions: [
-          {
-            name: "Color",
-            position: 1,
-            values: [
-              {
-                name: "Grey",
-              },
-              {
-                name: "Black",
-              },
-            ],
-          },
-        ],
-        tags: "new-arrival",
-        status: "ACTIVE",
-        title: "Winter gloves",
-        variants: [
-          {
-            optionValues: [
-              {
-                optionName: "Color",
-                name: "Grey",
-              },
-            ],
-            file: {
-              originalSource:
-                "https://cdn.shopify.com/s/files/1/0558/8628/2915/products/navy_aa6195b6-2585-4b4e-b1c2-f4b8ff904b42.jpg?v=1650971345",
-            },
-            price: 11.99,
-          },
-        ],
-        vendor: "EK",
+        collections: collections,
+        descriptionHtml: bodyHtml,
+        files: files,
+        handle: handle,
+        productOptions: productOptions,
+        status: status,
+        title: title,
+        variants: variants,
+        vendor: vendor,
       },
     },
   });
 
-  return data;
+  return result;
 }
 
 export {
