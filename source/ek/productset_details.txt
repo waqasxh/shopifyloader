@@ -9,8 +9,6 @@
 //title String -> "Title"
 //variants [ProductVariantSetInput!] -> "Variant Inventory Qty", "Variant Weight", "Variant Price", "Variant Image", "Option1 Name", "Option1 Value", "Option2 Name", "Option2 Value", "Option3 Name", "Option3 Value"
 //vendor String -> EK
-
-
   
 
   
