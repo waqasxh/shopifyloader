@@ -1,7 +1,9 @@
 {
   "dependencies": {
     "@shopify/shopify-api": "^11.4.1",
+    "@types/lodash": "^4.17.10",
     "csv": "^6.3.10",
+    "lodash": "^4.17.21",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2"
   },

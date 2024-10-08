@@ -2,11 +2,29 @@ import fs from "node:fs";
 import { parse } from "csv-parse";
 import { stringify } from "csv-stringify";
 import { logger } from "../logger";
+import { addProductSetEx } from "../processors/shopify";
+import _ from "lodash";
+import {
+  ProductSet,
+  File,
+  ProductOption,
+  ProductOptionValue,
+  Variant,
+  VariantOptionValue,
+  AddedProduct,
+} from "../interfaces";
 
 const sourceCSVPath = "./source/ek/EKW_Inventory_feed_Export.csv";
 const targetCSVPath = "./source/products_import.csv";
+const resultsCSVPath = "./source/ek/processing_results.csv";
 
-let currentHandle = "first-run";
+let currentHandle = "first-handle";
+let currentOption1 = "first-option1";
+let currentOption2 = "first-option2";
+
+let newProductSet = {} as ProductSet;
+
+let firstAddition: Boolean = true;
 
 const sourceHeaders = [
   "Variant SKU",
@@ -110,6 +128,151 @@ const processFile = (): Array<object> => {
     });
 
   return records;
+};
+
+const processFileEx = (): void => {
+  const parser = fs
+    .createReadStream("./source/ek/EKW_Inventory_feed_Export.csv")
+    .pipe(parse({ delimiter: ",", columns: true }))
+    .on("data", async function (row) {
+      logger.info(row);
+      if (currentHandle === row["Handle"]) {
+        const newFile: File = {
+          originalSource: row["Variant Image"],
+        };
+
+        if (!_.find(newProductSet.files, newFile)) {
+          newProductSet.files.push(newFile);
+        }
+
+        const productOption1Value: ProductOptionValue = {
+          name: row["Option1 Value"],
+        };
+
+        if (
+          !_.find(newProductSet.productOptions[0].values, productOption1Value)
+        ) {
+          newProductSet.productOptions[0].values.push(productOption1Value);
+        }
+
+        const productOption2Value: ProductOptionValue = {
+          name: row["Option2 Value"],
+        };
+
+        if (
+          !_.find(newProductSet.productOptions[1].values, productOption2Value)
+        ) {
+          newProductSet.productOptions[1].values.push(productOption2Value);
+        }
+        const variantOptionValue1: VariantOptionValue = {
+          optionName: row["Option1 Name"],
+          name: row["Option1 Value"],
+        };
+
+        const variantOptionValue2: VariantOptionValue = {
+          optionName: row["Option2 Name"],
+          name: row["Option2 Value"],
+        };
+
+        const newVariant: Variant = {
+          optionValues: [variantOptionValue1, variantOptionValue2],
+          file: newFile,
+          price: Number(row["Variant Price"]),
+          sku: row["Variant SKU"],
+        };
+
+        newProductSet.variants.push(newVariant);
+      } else {
+        if (currentHandle !== "first-handle") {
+          let result = addProductSetEx(newProductSet).then(
+            ({ data, errors, extensions }) => {
+              const addedProduct: AddedProduct[] = [
+                {
+                  id: data.productSet.product.id,
+                  handle: data.productSet.product.handle,
+                },
+              ];
+
+              if (firstAddition) {
+                writeAddedProductToCSV(addedProduct, resultsCSVPath);
+                firstAddition = false;
+              } else {
+                appendAddedProductToCSV(addedProduct, resultsCSVPath);
+              }
+            }
+          );
+        }
+
+        newProductSet = {} as ProductSet;
+
+        newProductSet.collections = [
+          "gid://shopify/Collection/631220535638", //deals & clearance
+          "gid://shopify/Collection/631220633942", //new arivals
+          "gid://shopify/Collection/631220765014", //fashion & accessories
+        ];
+
+        newProductSet.descriptionHtml = row["Body HTML"];
+
+        const newFile: File = {
+          originalSource: row["Variant Image"],
+        };
+
+        newProductSet.files = [newFile];
+
+        newProductSet.handle = row["Handle"];
+
+        const productOption1Value: ProductOptionValue = {
+          name: row["Option1 Value"],
+        };
+
+        const productOption1: ProductOption = {
+          name: row["Option1 Name"],
+          position: 1,
+          values: [productOption1Value],
+        };
+
+        const productOption2Value: ProductOptionValue = {
+          name: row["Option2 Value"],
+        };
+
+        const productOption2: ProductOption = {
+          name: row["Option2 Name"],
+          position: 1,
+          values: [productOption2Value],
+        };
+
+        newProductSet.productOptions = [productOption1];
+        newProductSet.productOptions.push(productOption2);
+
+        newProductSet.status = "ACTIVE";
+        newProductSet.title = row["Title"];
+
+        const variantOptionValue1: VariantOptionValue = {
+          optionName: row["Option1 Name"],
+          name: row["Option1 Value"],
+        };
+
+        const variantOptionValue2: VariantOptionValue = {
+          optionName: row["Option2 Name"],
+          name: row["Option2 Value"],
+        };
+
+        const newVariant: Variant = {
+          optionValues: [variantOptionValue1, variantOptionValue2],
+          file: newFile,
+          price: Number(row["Variant Price"]),
+          sku: row["Variant SKU"],
+        };
+
+        newProductSet.variants = [newVariant];
+
+        newProductSet.vendor = "EK";
+
+        currentHandle = row["Handle"];
+        currentOption1 = row["Option1 Value"];
+        currentOption2 = row["Option2 Value"];
+      }
+    });
 };
 
 const convertAndExportFile = async (): Promise<void> => {
@@ -234,4 +397,40 @@ function transformRow(sourceRow: any): any {
   return targetRow;
 }
 
-export { processFile, convertAndExportFile };
+function writeAddedProductToCSV(
+  products: AddedProduct[],
+  fileName: string
+): void {
+  const csvHeaders = "Id,Handle,\n";
+  const csvRows =
+    products.map((product) => `${product.id},${product.handle}`).join(",\n") +
+    ",\n";
+  const csvContent = csvHeaders + csvRows;
+
+  fs.writeFile(fileName, csvContent, "utf8", (error) => {
+    if (error) {
+      console.error("Error writing to CSV file:", error);
+    } else {
+      console.log(`CSV file "${fileName}" created successfully.`);
+    }
+  });
+}
+
+function appendAddedProductToCSV(
+  products: AddedProduct[],
+  fileName: string
+): void {
+  const csvRows =
+    products.map((product) => `${product.id},${product.handle}`).join(",\n") +
+    ",\n";
+
+  fs.appendFile(fileName, csvRows, "utf8", (error) => {
+    if (error) {
+      console.error("Error appending to CSV file:", error);
+    } else {
+      console.log(`Data appended to CSV file "${fileName}" successfully.`);
+    }
+  });
+}
+
+export { processFile, convertAndExportFile, processFileEx };
