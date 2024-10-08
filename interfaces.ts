@@ -1,4 +1,5 @@
 interface ProductSet {
+  id: string;
   collections: string[];
   descriptionHtml: string;
   files: Array<File>;
@@ -29,6 +30,7 @@ interface Variant {
   file: File;
   price: number;
   sku: string;
+  compareAtPrice: number;
 }
 
 interface VariantOptionValue {

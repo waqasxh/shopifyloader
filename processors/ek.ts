@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import { parse } from "csv-parse";
+import { parse as sync } from "csv-parse/sync";
 import { stringify } from "csv-stringify";
 import { logger } from "../logger";
-import { addProductSetEx } from "../processors/shopify";
+import { addProductSetEx, publishProductById } from "../processors/shopify";
 import _ from "lodash";
 import {
   ProductSet,
@@ -120,7 +121,7 @@ const targetHeaders = [
 const processFile = (): Array<object> => {
   let records: Array<object> = new Array<object>();
   const parser = fs
-    .createReadStream("./source/ek/EKW_Inventory_feed_Export.csv")
+    .createReadStream(sourceCSVPath)
     .pipe(parse({ delimiter: ",", columns: true }))
     .on("data", function (row) {
       logger.info(row);
@@ -131,11 +132,14 @@ const processFile = (): Array<object> => {
 };
 
 const processFileEx = (): void => {
+  let previousProducts: AddedProduct[] =
+    previouslyAddedProducts(resultsCSVPath);
   const parser = fs
-    .createReadStream("./source/ek/EKW_Inventory_feed_Export.csv")
+    .createReadStream(sourceCSVPath)
     .pipe(parse({ delimiter: ",", columns: true }))
     .on("data", async function (row) {
       logger.info(row);
+
       if (currentHandle === row["Handle"]) {
         const newFile: File = {
           originalSource: row["Variant Image"],
@@ -177,8 +181,21 @@ const processFileEx = (): void => {
         const newVariant: Variant = {
           optionValues: [variantOptionValue1, variantOptionValue2],
           file: newFile,
-          price: Number(row["Variant Price"]),
+          price: Number(
+            (
+              parseFloat(row["Variant Price"]) +
+              4 +
+              (parseFloat(row["Variant Price"]) * 40) / 100
+            ).toString()
+          ),
           sku: row["Variant SKU"],
+          compareAtPrice: Number(
+            (
+              parseFloat(row["Variant Price"]) +
+              4 +
+              (parseFloat(row["Variant Price"]) * 50) / 100
+            ).toString()
+          ),
         };
 
         newProductSet.variants.push(newVariant);
@@ -193,12 +210,18 @@ const processFileEx = (): void => {
                 },
               ];
 
-              if (firstAddition) {
-                writeAddedProductToCSV(addedProduct, resultsCSVPath);
-                firstAddition = false;
-              } else {
-                appendAddedProductToCSV(addedProduct, resultsCSVPath);
+              if (!newProductSet.id) {
+                if (firstAddition) {
+                  writeAddedProductToCSV(addedProduct, resultsCSVPath);
+                  firstAddition = false;
+                } else {
+                  appendAddedProductToCSV(addedProduct, resultsCSVPath);
+                }
               }
+              publishProductById(
+                data.productSet.product.id,
+                "gid://shopify/Publication/248231526742"
+              );
             }
           );
         }
@@ -260,13 +283,34 @@ const processFileEx = (): void => {
         const newVariant: Variant = {
           optionValues: [variantOptionValue1, variantOptionValue2],
           file: newFile,
-          price: Number(row["Variant Price"]),
+          price: Number(
+            (
+              parseFloat(row["Variant Price"]) +
+              4 +
+              (parseFloat(row["Variant Price"]) * 40) / 100
+            ).toString()
+          ),
           sku: row["Variant SKU"],
+          compareAtPrice: Number(
+            (
+              parseFloat(row["Variant Price"]) +
+              4 +
+              (parseFloat(row["Variant Price"]) * 50) / 100
+            ).toString()
+          ),
         };
 
         newProductSet.variants = [newVariant];
 
         newProductSet.vendor = "EK";
+
+        let previousRecord = _.find(previousProducts, {
+          handle: row["Handle"],
+        });
+
+        if (previousRecord) {
+          newProductSet.id = previousRecord.id;
+        }
 
         currentHandle = row["Handle"];
         currentOption1 = row["Option1 Value"];
@@ -432,5 +476,27 @@ function appendAddedProductToCSV(
     }
   });
 }
+
+const previouslyAddedProducts = (filePath: string): AddedProduct[] => {
+  const records: AddedProduct[] = [];
+
+  if (fs.existsSync(filePath)) {
+    const fileContent = fs.readFileSync(filePath, "utf8");
+    const rows = sync(fileContent, {
+      delimiter: ",",
+      columns: true,
+      skip_empty_lines: true,
+    });
+
+    for (const row of rows) {
+      records.push({
+        id: row["Id"],
+        handle: row["Handle"],
+      });
+    }
+  }
+
+  return records;
+};
 
 export { processFile, convertAndExportFile, processFileEx };

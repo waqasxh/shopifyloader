@@ -68,6 +68,39 @@ async function unpublishProductById(
   });
 }
 
+async function publishProductById(
+  productId: string,
+  publicationId: string
+): Promise<any> {
+  const mutation = `mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
+  publishablePublish(id: $id, input: $input) {
+    publishable {
+      availablePublicationsCount {
+        count
+      }
+      resourcePublicationsCount {
+        count
+      }
+    }
+    shop {
+      publicationCount
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}`;
+  const { data, errors, extensions } = await client.request(mutation, {
+    variables: {
+      id: productId,
+      input: {
+        publicationId: publicationId,
+      },
+    },
+  });
+}
+
 // async function addProductSet(): Promise<any> {
 //   const mutation = `mutation createProduct($productSet: ProductSetInput!, $synchronous: Boolean!) {
 //   productSet(synchronous: $synchronous, input: $productSet) {
@@ -251,4 +284,5 @@ export {
   unpublishProductById,
   addProductSet,
   addProductSetEx,
+  publishProductById,
 };
