@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import { parse } from "csv-parse";
-import { parse as sync } from "csv-parse/sync";
+import { parse as parseAsync } from "csv-parse";
+import { parse as parseSync } from "csv-parse/sync";
 import { stringify } from "csv-stringify";
 import { logger } from "../logger";
 import { addProductSetEx, publishProductById } from "../processors/shopify";
@@ -13,17 +13,15 @@ import {
   Variant,
   VariantOptionValue,
   AddedProduct,
+  FailedProduct,
 } from "../interfaces";
 
 const sourceCSVPath = "./source/ek/EKW_Inventory_feed_Export.csv";
 const targetCSVPath = "./source/products_import.csv";
-const resultsCSVPath = "./source/ek/processing_results.csv";
+const successCSVPath = "./source/ek/processing_success.csv";
+const failCSVPath = "./source/ek/processing_fail.csv";
 
 let currentHandle = "first-handle";
-let currentOption1 = "first-option1";
-let currentOption2 = "first-option2";
-
-let newProductSet = {} as ProductSet;
 
 let firstAddition: Boolean = true;
 
@@ -118,11 +116,11 @@ const targetHeaders = [
   "Status",
 ];
 
-const processFile = (): Array<object> => {
+const processEKFile = (): Array<object> => {
   let records: Array<object> = new Array<object>();
   const parser = fs
     .createReadStream(sourceCSVPath)
-    .pipe(parse({ delimiter: ",", columns: true }))
+    .pipe(parseAsync({ delimiter: ",", columns: true }))
     .on("data", function (row) {
       logger.info(row);
       records.push(row);
@@ -131,198 +129,192 @@ const processFile = (): Array<object> => {
   return records;
 };
 
-const processFileEx = (): void => {
+const processEKFileEx = (): Array<ProductSet> => {
+  let productSetList: ProductSet[] = [];
+
+  if (!fs.existsSync(sourceCSVPath)) {
+    return productSetList;
+  }
+
+  let currentOption1 = "first-option1";
+  let currentOption2 = "first-option2";
+
+  let newProductSet = {} as ProductSet;
+
   let previousProducts: AddedProduct[] =
-    previouslyAddedProducts(resultsCSVPath);
-  const parser = fs
-    .createReadStream(sourceCSVPath)
-    .pipe(parse({ delimiter: ",", columns: true }))
-    .on("data", async function (row) {
-      logger.info(row);
+    previouslyAddedProducts(successCSVPath);
 
-      if (currentHandle === row["Handle"]) {
-        const newFile: File = {
-          originalSource: row["Variant Image"],
-        };
+  const fileContent = fs.readFileSync(sourceCSVPath, "utf8");
+  const rows = parseSync(fileContent, {
+    delimiter: ",",
+    columns: true,
+    skip_empty_lines: true,
+  });
 
-        if (!_.find(newProductSet.files, newFile)) {
-          newProductSet.files.push(newFile);
-        }
+  for (const row of rows) {
+    if (currentHandle === row["Handle"]) {
+      const newFile: File = {
+        originalSource: row["Variant Image"],
+      };
 
-        const productOption1Value: ProductOptionValue = {
-          name: row["Option1 Value"],
-        };
-
-        if (
-          !_.find(newProductSet.productOptions[0].values, productOption1Value)
-        ) {
-          newProductSet.productOptions[0].values.push(productOption1Value);
-        }
-
-        const productOption2Value: ProductOptionValue = {
-          name: row["Option2 Value"],
-        };
-
-        if (
-          !_.find(newProductSet.productOptions[1].values, productOption2Value)
-        ) {
-          newProductSet.productOptions[1].values.push(productOption2Value);
-        }
-        const variantOptionValue1: VariantOptionValue = {
-          optionName: row["Option1 Name"],
-          name: row["Option1 Value"],
-        };
-
-        const variantOptionValue2: VariantOptionValue = {
-          optionName: row["Option2 Name"],
-          name: row["Option2 Value"],
-        };
-
-        const newVariant: Variant = {
-          optionValues: [variantOptionValue1, variantOptionValue2],
-          file: newFile,
-          price: Number(
-            (
-              parseFloat(row["Variant Price"]) +
-              4 +
-              (parseFloat(row["Variant Price"]) * 40) / 100
-            ).toString()
-          ),
-          sku: row["Variant SKU"],
-          compareAtPrice: Number(
-            (
-              parseFloat(row["Variant Price"]) +
-              4 +
-              (parseFloat(row["Variant Price"]) * 50) / 100
-            ).toString()
-          ),
-        };
-
-        newProductSet.variants.push(newVariant);
-      } else {
-        if (currentHandle !== "first-handle") {
-          let result = addProductSetEx(newProductSet).then(
-            ({ data, errors, extensions }) => {
-              const addedProduct: AddedProduct[] = [
-                {
-                  id: data.productSet.product.id,
-                  handle: data.productSet.product.handle,
-                },
-              ];
-
-              if (!newProductSet.id) {
-                if (firstAddition) {
-                  writeAddedProductToCSV(addedProduct, resultsCSVPath);
-                  firstAddition = false;
-                } else {
-                  appendAddedProductToCSV(addedProduct, resultsCSVPath);
-                }
-              }
-              publishProductById(
-                data.productSet.product.id,
-                "gid://shopify/Publication/248231526742"
-              );
-            }
-          );
-        }
-
-        newProductSet = {} as ProductSet;
-
-        newProductSet.collections = [
-          "gid://shopify/Collection/631220535638", //deals & clearance
-          "gid://shopify/Collection/631220633942", //new arivals
-          "gid://shopify/Collection/631220765014", //fashion & accessories
-        ];
-
-        newProductSet.descriptionHtml = row["Body HTML"];
-
-        const newFile: File = {
-          originalSource: row["Variant Image"],
-        };
-
-        newProductSet.files = [newFile];
-
-        newProductSet.handle = row["Handle"];
-
-        const productOption1Value: ProductOptionValue = {
-          name: row["Option1 Value"],
-        };
-
-        const productOption1: ProductOption = {
-          name: row["Option1 Name"],
-          position: 1,
-          values: [productOption1Value],
-        };
-
-        const productOption2Value: ProductOptionValue = {
-          name: row["Option2 Value"],
-        };
-
-        const productOption2: ProductOption = {
-          name: row["Option2 Name"],
-          position: 1,
-          values: [productOption2Value],
-        };
-
-        newProductSet.productOptions = [productOption1];
-        newProductSet.productOptions.push(productOption2);
-
-        newProductSet.status = "ACTIVE";
-        newProductSet.title = row["Title"];
-
-        const variantOptionValue1: VariantOptionValue = {
-          optionName: row["Option1 Name"],
-          name: row["Option1 Value"],
-        };
-
-        const variantOptionValue2: VariantOptionValue = {
-          optionName: row["Option2 Name"],
-          name: row["Option2 Value"],
-        };
-
-        const newVariant: Variant = {
-          optionValues: [variantOptionValue1, variantOptionValue2],
-          file: newFile,
-          price: Number(
-            (
-              parseFloat(row["Variant Price"]) +
-              4 +
-              (parseFloat(row["Variant Price"]) * 40) / 100
-            ).toString()
-          ),
-          sku: row["Variant SKU"],
-          compareAtPrice: Number(
-            (
-              parseFloat(row["Variant Price"]) +
-              4 +
-              (parseFloat(row["Variant Price"]) * 50) / 100
-            ).toString()
-          ),
-        };
-
-        newProductSet.variants = [newVariant];
-
-        newProductSet.vendor = "EK";
-
-        let previousRecord = _.find(previousProducts, {
-          handle: row["Handle"],
-        });
-
-        if (previousRecord) {
-          newProductSet.id = previousRecord.id;
-        }
-
-        currentHandle = row["Handle"];
-        currentOption1 = row["Option1 Value"];
-        currentOption2 = row["Option2 Value"];
+      if (!_.find(newProductSet.files, newFile)) {
+        newProductSet.files.push(newFile);
       }
-    });
+
+      const productOption1Value: ProductOptionValue = {
+        name: row["Option1 Value"],
+      };
+
+      if (
+        !_.find(newProductSet.productOptions[0].values, productOption1Value)
+      ) {
+        newProductSet.productOptions[0].values.push(productOption1Value);
+      }
+
+      const productOption2Value: ProductOptionValue = {
+        name: row["Option2 Value"],
+      };
+
+      if (
+        !_.find(newProductSet.productOptions[1].values, productOption2Value)
+      ) {
+        newProductSet.productOptions[1].values.push(productOption2Value);
+      }
+      const variantOptionValue1: VariantOptionValue = {
+        optionName: row["Option1 Name"],
+        name: row["Option1 Value"],
+      };
+
+      const variantOptionValue2: VariantOptionValue = {
+        optionName: row["Option2 Name"],
+        name: row["Option2 Value"],
+      };
+
+      const newVariant: Variant = {
+        optionValues: [variantOptionValue1, variantOptionValue2],
+        file: newFile,
+        price: Number(
+          (
+            parseFloat(row["Variant Price"]) +
+            4 +
+            (parseFloat(row["Variant Price"]) * 40) / 100
+          ).toString()
+        ),
+        sku: row["Variant SKU"],
+        compareAtPrice: Number(
+          (
+            parseFloat(row["Variant Price"]) +
+            4 +
+            (parseFloat(row["Variant Price"]) * 50) / 100
+          ).toString()
+        ),
+      };
+
+      newProductSet.variants.push(newVariant);
+    } else {
+      if (currentHandle !== "first-handle") {
+        productSetList.push(newProductSet);
+      }
+
+      newProductSet = {} as ProductSet;
+
+      newProductSet.collections = [
+        "gid://shopify/Collection/631220535638", //deals & clearance
+        "gid://shopify/Collection/631220633942", //new arivals
+        "gid://shopify/Collection/631220765014", //fashion & accessories
+      ];
+
+      newProductSet.descriptionHtml = row["Body HTML"];
+
+      const newFile: File = {
+        originalSource: row["Variant Image"],
+      };
+
+      newProductSet.files = [newFile];
+
+      newProductSet.handle = row["Handle"];
+
+      const productOption1Value: ProductOptionValue = {
+        name: row["Option1 Value"],
+      };
+
+      const productOption1: ProductOption = {
+        name: row["Option1 Name"],
+        position: 1,
+        values: [productOption1Value],
+      };
+
+      const productOption2Value: ProductOptionValue = {
+        name: row["Option2 Value"],
+      };
+
+      const productOption2: ProductOption = {
+        name: row["Option2 Name"],
+        position: 1,
+        values: [productOption2Value],
+      };
+
+      newProductSet.productOptions = [productOption1];
+      newProductSet.productOptions.push(productOption2);
+
+      newProductSet.status = "ACTIVE";
+      newProductSet.title = row["Title"];
+
+      const variantOptionValue1: VariantOptionValue = {
+        optionName: row["Option1 Name"],
+        name: row["Option1 Value"],
+      };
+
+      const variantOptionValue2: VariantOptionValue = {
+        optionName: row["Option2 Name"],
+        name: row["Option2 Value"],
+      };
+
+      const newVariant: Variant = {
+        optionValues: [variantOptionValue1, variantOptionValue2],
+        file: newFile,
+        price: Number(
+          (
+            parseFloat(row["Variant Price"]) +
+            4 +
+            (parseFloat(row["Variant Price"]) * 40) / 100
+          ).toString()
+        ),
+        sku: row["Variant SKU"],
+        compareAtPrice: Number(
+          (
+            parseFloat(row["Variant Price"]) +
+            4 +
+            (parseFloat(row["Variant Price"]) * 50) / 100
+          ).toString()
+        ),
+      };
+
+      newProductSet.variants = [newVariant];
+
+      newProductSet.vendor = "EK";
+
+      let previousRecord = _.find(previousProducts, {
+        handle: row["Handle"],
+      });
+
+      if (previousRecord) {
+        newProductSet.id = previousRecord.id;
+      }
+
+      currentHandle = row["Handle"];
+      currentOption1 = row["Option1 Value"];
+      currentOption2 = row["Option2 Value"];
+    }
+  }
+
+  return productSetList;
 };
 
 const convertAndExportFile = async (): Promise<void> => {
   const parser = fs
     .createReadStream(sourceCSVPath)
-    .pipe(parse({ columns: true, trim: true }));
+    .pipe(parseAsync({ columns: true, trim: true }));
 
   const transformer = stringify({ header: true, columns: targetHeaders });
 
@@ -445,15 +437,36 @@ function writeAddedProductToCSV(
   products: AddedProduct[],
   fileName: string
 ): void {
-  const csvHeaders = "Id,Handle,\n";
+  const csvHeaders = "Id,Handle,Title,\n";
   const csvRows =
-    products.map((product) => `${product.id},${product.handle}`).join(",\n") +
-    ",\n";
+    products
+      .map((product) => `${product.id},${product.handle},${product.title}`)
+      .join(",\n") + ",\n";
   const csvContent = csvHeaders + csvRows;
 
   fs.writeFile(fileName, csvContent, "utf8", (error) => {
     if (error) {
-      console.error("Error writing to CSV file:", error);
+      console.error("Error writing to Success CSV file:", error);
+    } else {
+      console.log(`CSV file "${fileName}" created successfully.`);
+    }
+  });
+}
+
+function writeFailedProductToCSV(
+  products: FailedProduct[],
+  fileName: string
+): void {
+  const csvHeaders = "Handle,Title,\n";
+  const csvRows =
+    products
+      .map((product) => `${product.handle},${product.title}`)
+      .join(",\n") + ",\n";
+  const csvContent = csvHeaders + csvRows;
+
+  fs.writeFile(fileName, csvContent, "utf8", (error) => {
+    if (error) {
+      console.error("Error writing to Failed CSV file:", error);
     } else {
       console.log(`CSV file "${fileName}" created successfully.`);
     }
@@ -465,8 +478,9 @@ function appendAddedProductToCSV(
   fileName: string
 ): void {
   const csvRows =
-    products.map((product) => `${product.id},${product.handle}`).join(",\n") +
-    ",\n";
+    products
+      .map((product) => `${product.id},${product.handle},${product.title}`)
+      .join(",\n") + ",\n";
 
   fs.appendFile(fileName, csvRows, "utf8", (error) => {
     if (error) {
@@ -482,7 +496,7 @@ const previouslyAddedProducts = (filePath: string): AddedProduct[] => {
 
   if (fs.existsSync(filePath)) {
     const fileContent = fs.readFileSync(filePath, "utf8");
-    const rows = sync(fileContent, {
+    const rows = parseSync(fileContent, {
       delimiter: ",",
       columns: true,
       skip_empty_lines: true,
@@ -492,6 +506,7 @@ const previouslyAddedProducts = (filePath: string): AddedProduct[] => {
       records.push({
         id: row["Id"],
         handle: row["Handle"],
+        title: row["Title"],
       });
     }
   }
@@ -499,4 +514,63 @@ const previouslyAddedProducts = (filePath: string): AddedProduct[] => {
   return records;
 };
 
-export { processFile, convertAndExportFile, processFileEx };
+async function loadAllEKroducts(): Promise<void> {
+  let productSetList: ProductSet[] = processEKFileEx();
+  let successProductList: AddedProduct[] = [];
+  let failedProductList: FailedProduct[] = [];
+
+  for (const newProductSet of productSetList) {
+    try {
+      await addProductSetEx(newProductSet).then(
+        ({ data, errors, extensions }) => {
+          if (data) {
+            // logger.info("New ProductSet");
+            // logger.info(newProductSet);
+            logger.info("ProductSet Result");
+            logger.info(data);
+
+            if (!newProductSet.id) {
+              successProductList.push({
+                id: data.productSet.product.id,
+                handle: data.productSet.product.handle,
+                title: data.productSet.product.title,
+              });
+            }
+            publishProductById(
+              data.productSet.product.id,
+              "gid://shopify/Publication/248231526742"
+            );
+          } else if (errors) {
+            failedProductList.push({
+              handle: newProductSet.handle,
+              title: newProductSet.title,
+            });
+            logger.error("ProductSet Errors");
+            logger.error(errors);
+            logger.error("ProductSet Extensions");
+            logger.error(extensions);
+          }
+        }
+      );
+    } catch (e) {
+      failedProductList.push({
+        handle: newProductSet.handle,
+        title: newProductSet.title,
+      });
+      logger.error("Exception");
+      logger.error(e);
+      logger.error("ProductSet");
+      logger.error(newProductSet);
+    }
+  }
+
+  writeAddedProductToCSV(successProductList, successCSVPath);
+  writeFailedProductToCSV(failedProductList, failCSVPath);
+}
+
+export {
+  processEKFile,
+  convertAndExportFile,
+  processEKFileEx,
+  loadAllEKroducts,
+};

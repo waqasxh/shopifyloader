@@ -41,6 +41,12 @@ interface VariantOptionValue {
 interface AddedProduct {
   id: string;
   handle: string;
+  title: string;
+}
+
+interface FailedProduct {
+  handle: string;
+  title: string;
 }
 
 // interface EkRowItem {
@@ -73,4 +79,5 @@ export {
   Variant,
   VariantOptionValue,
   AddedProduct,
+  FailedProduct,
 };

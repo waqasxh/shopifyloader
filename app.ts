@@ -1,8 +1,9 @@
 import { logger } from "./logger";
 import {
-  processFile,
+  processEKFile,
   convertAndExportFile,
-  processFileEx,
+  processEKFileEx,
+  loadAllEKroducts,
 } from "./processors/ek";
 import {
   retrievProductById,
@@ -77,4 +78,4 @@ logger.info(`Execution of  ${name} Started.`);
 //   const handle = data.productSet.product.handle;
 // });
 
-processFileEx();
+loadAllEKroducts();

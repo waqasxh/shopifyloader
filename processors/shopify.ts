@@ -262,6 +262,7 @@ async function addProductSetEx(productSet: ProductSet): Promise<any> {
     product {
       id
       handle
+      title
     }
     userErrors {
       field
