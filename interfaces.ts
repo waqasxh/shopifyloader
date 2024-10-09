@@ -31,6 +31,8 @@ interface Variant {
   price: number;
   sku: string;
   compareAtPrice: number;
+  inventoryQuantities: [InventoryQuantity];
+  inventoryPolicy: string;
 }
 
 interface VariantOptionValue {
@@ -47,6 +49,12 @@ interface AddedProduct {
 interface FailedProduct {
   handle: string;
   title: string;
+}
+
+interface InventoryQuantity {
+  locationId: string;
+  name: string;
+  quantity: number;
 }
 
 // interface EkRowItem {
@@ -80,4 +88,5 @@ export {
   VariantOptionValue,
   AddedProduct,
   FailedProduct,
+  InventoryQuantity,
 };

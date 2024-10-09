@@ -14,6 +14,7 @@ import {
   VariantOptionValue,
   AddedProduct,
   FailedProduct,
+  InventoryQuantity,
 } from "../interfaces";
 
 const sourceCSVPath = "./source/ek/EKW_Inventory_feed_Export.csv";
@@ -190,6 +191,12 @@ const processEKFileEx = (): Array<ProductSet> => {
         name: row["Option2 Value"],
       };
 
+      const inventoryQuantity: InventoryQuantity = {
+        locationId: "gid://shopify/Location/98172928342", //United Kingdom
+        name: "available",
+        quantity: Number(row["Variant Inventory Qty"]),
+      };
+
       const newVariant: Variant = {
         optionValues: [variantOptionValue1, variantOptionValue2],
         file: newFile,
@@ -208,6 +215,8 @@ const processEKFileEx = (): Array<ProductSet> => {
             (parseFloat(row["Variant Price"]) * 50) / 100
           ).toString()
         ),
+        inventoryQuantities: [inventoryQuantity],
+        inventoryPolicy: "DENY",
       };
 
       newProductSet.variants.push(newVariant);
@@ -270,6 +279,12 @@ const processEKFileEx = (): Array<ProductSet> => {
         name: row["Option2 Value"],
       };
 
+      const inventoryQuantity: InventoryQuantity = {
+        locationId: "gid://shopify/Location/98172928342", //United Kingdom
+        name: "available",
+        quantity: Number(row["Variant Inventory Qty"]),
+      };
+
       const newVariant: Variant = {
         optionValues: [variantOptionValue1, variantOptionValue2],
         file: newFile,
@@ -288,6 +303,8 @@ const processEKFileEx = (): Array<ProductSet> => {
             (parseFloat(row["Variant Price"]) * 50) / 100
           ).toString()
         ),
+        inventoryQuantities: [inventoryQuantity],
+        inventoryPolicy: "DENY",
       };
 
       newProductSet.variants = [newVariant];
@@ -564,8 +581,13 @@ async function loadAllEKroducts(): Promise<void> {
     }
   }
 
-  writeAddedProductToCSV(successProductList, successCSVPath);
-  writeFailedProductToCSV(failedProductList, failCSVPath);
+  if (successProductList.length > 0) {
+    writeAddedProductToCSV(successProductList, successCSVPath);
+  }
+
+  if (failedProductList.length > 0) {
+    writeFailedProductToCSV(failedProductList, failCSVPath);
+  }
 }
 
 export {

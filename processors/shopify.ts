@@ -191,40 +191,89 @@ async function publishProductById(
 //   });
 // }
 
-async function addProductSet(
-  collections: any[],
-  bodyHtml: string,
-  files: any[],
-  handle: string,
-  productOptions: any[],
-  status: string,
-  title: string,
-  variants: any[],
-  vendor: string
-): Promise<any> {
+// async function addProductSet(
+//   collections: any[],
+//   bodyHtml: string,
+//   files: any[],
+//   handle: string,
+//   productOptions: any[],
+//   status: string,
+//   title: string,
+//   variants: any[],
+//   vendor: string
+// ): Promise<any> {
+//   const mutation = `mutation createProduct($productSet: ProductSetInput!, $synchronous: Boolean!) {
+//   productSet(synchronous: $synchronous, input: $productSet) {
+//     product {
+//       id
+//       handle
+//       media(first: 5) {
+//         nodes {
+//           id
+//           alt
+//           mediaContentType
+//           status
+//         }
+//       }
+//       variants(first: 5) {
+//         nodes {
+//           title
+//           price
+//           media(first: 5) {
+//             nodes {
+//               id
+//               alt
+//               mediaContentType
+//               status
+//             }
+//           }
+//         }
+//       }
+//     }
+//     userErrors {
+//       field
+//       message
+//     }
+//   }
+// }`;
+//   const result = await client.request(mutation, {
+//     variables: {
+//       synchronous: true,
+//       productSet: {
+//         collections: collections,
+//         descriptionHtml: bodyHtml,
+//         files: files,
+//         handle: handle,
+//         productOptions: productOptions,
+//         status: status,
+//         title: title,
+//         variants: variants,
+//         vendor: vendor,
+//       },
+//     },
+//   });
+
+//   return result;
+// }
+
+async function addProductSet(): Promise<any> {
   const mutation = `mutation createProduct($productSet: ProductSetInput!, $synchronous: Boolean!) {
   productSet(synchronous: $synchronous, input: $productSet) {
     product {
       id
-      handle
-      media(first: 5) {
-        nodes {
-          id          
-          alt
-          mediaContentType
-          status
-        }
-      }
       variants(first: 5) {
         nodes {
           title
           price
-          media(first: 5) {
-            nodes {
-              id              
-              alt
-              mediaContentType
-              status
+          inventoryQuantity
+          inventoryItem {
+            inventoryLevels(first: 5) {
+              nodes {
+                location {
+                  id
+                  name
+                }                
+              }
             }
           }
         }
@@ -236,24 +285,62 @@ async function addProductSet(
     }
   }
 }`;
-  const result = await client.request(mutation, {
+  const { data, errors, extensions } = await client.request(mutation, {
     variables: {
       synchronous: true,
       productSet: {
-        collections: collections,
-        descriptionHtml: bodyHtml,
-        files: files,
-        handle: handle,
-        productOptions: productOptions,
-        status: status,
-        title: title,
-        variants: variants,
-        vendor: vendor,
+        title: "Winter hat",
+        productOptions: [
+          {
+            name: "Color",
+            position: 1,
+            values: [
+              {
+                name: "Grey",
+              },
+              {
+                name: "Black",
+              },
+            ],
+          },
+        ],
+        variants: [
+          {
+            optionValues: [
+              {
+                optionName: "Color",
+                name: "Grey",
+              },
+            ],
+            inventoryQuantities: [
+              {
+                locationId: "gid://shopify/Location/98172928342",
+                name: "available",
+                quantity: 19,
+              },
+            ],
+            price: 79.99,
+          },
+          {
+            optionValues: [
+              {
+                optionName: "Color",
+                name: "Black",
+              },
+            ],
+            inventoryQuantities: [
+              {
+                locationId: "gid://shopify/Location/98172928342",
+                name: "available",
+                quantity: 844,
+              },
+            ],
+            price: 11.99,
+          },
+        ],
       },
     },
   });
-
-  return result;
 }
 
 async function addProductSetEx(productSet: ProductSet): Promise<any> {

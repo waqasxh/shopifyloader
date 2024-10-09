@@ -1,0 +1,1 @@
+- add variant quantity to productset mutation
