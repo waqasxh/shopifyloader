@@ -228,9 +228,7 @@ const processEKFileEx = (): Array<ProductSet> => {
       newProductSet = {} as ProductSet;
 
       newProductSet.collections = [
-        "gid://shopify/Collection/631220535638", //deals & clearance
-        "gid://shopify/Collection/631220633942", //new arivals
-        "gid://shopify/Collection/631220765014", //fashion & accessories
+        //"gid://shopify/Collection/631112204630", //Home page
       ];
 
       newProductSet.descriptionHtml = row["Body HTML"];
@@ -454,11 +452,10 @@ function writeAddedProductToCSV(
   products: AddedProduct[],
   fileName: string
 ): void {
-  const csvHeaders = "Id,Handle,Title,\n";
-  const csvRows =
-    products
-      .map((product) => `${product.id},${product.handle},${product.title}`)
-      .join(",\n") + ",\n";
+  const csvHeaders = "Id,Handle,Title\n";
+  const csvRows = products
+    .map((product) => `${product.id},${product.handle},${product.title}`)
+    .join("\n");
   const csvContent = csvHeaders + csvRows;
 
   fs.writeFile(fileName, csvContent, "utf8", (error) => {
@@ -474,11 +471,10 @@ function writeFailedProductToCSV(
   products: FailedProduct[],
   fileName: string
 ): void {
-  const csvHeaders = "Handle,Title,\n";
-  const csvRows =
-    products
-      .map((product) => `${product.handle},${product.title}`)
-      .join(",\n") + ",\n";
+  const csvHeaders = "Handle,Title\n";
+  const csvRows = products
+    .map((product) => `${product.handle},${product.title}`)
+    .join("\n");
   const csvContent = csvHeaders + csvRows;
 
   fs.writeFile(fileName, csvContent, "utf8", (error) => {
@@ -541,8 +537,8 @@ async function loadAllEKroducts(): Promise<void> {
       await addProductSetEx(newProductSet).then(
         ({ data, errors, extensions }) => {
           if (data) {
-            // logger.info("New ProductSet");
-            // logger.info(newProductSet);
+            logger.info("New ProductSet");
+            logger.info(newProductSet);
             logger.info("ProductSet Result");
             logger.info(data);
 
