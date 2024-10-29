@@ -1,1 +1,1 @@
-- add variant quantity to productset mutation
+- add variant quantity to productset mutation - issue pending with shopify

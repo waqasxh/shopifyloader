@@ -10,6 +10,11 @@ import {
   unpublishProductById,
   addProductSet,
 } from "./processors/shopify";
+import { processAllScrappedFiles } from "./processors/awasm";
+import { loadJsonFile } from "./helper";
+
+import { getChatCompletion } from "./processors/openai";
+import { result } from "lodash";
 
 let name: string = "Shopify Loader";
 logger.info(`Execution of  ${name} Started.`);
@@ -78,4 +83,12 @@ logger.info(`Execution of  ${name} Started.`);
 //   const handle = data.productSet.product.handle;
 // });
 
-loadAllEKroducts();
+//loadAllEKroducts();
+
+// loadJsonFile("S0671265757.json").then((data) => {
+//   getChatCompletion(data).then((result) => {
+//     console.log(result);
+//   });
+// });
+
+processAllScrappedFiles();
