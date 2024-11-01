@@ -13,8 +13,11 @@ import {
 import { processAllScrappedFiles } from "./processors/awasm";
 import { loadJsonFile } from "./helper";
 
-import { getChatCompletion } from "./processors/openai";
-import { result } from "lodash";
+import {
+  categoryConfirmation,
+  seoFriendlyTitle,
+  seoFriendlyDescription,
+} from "./processors/openai";
 
 let name: string = "Shopify Loader";
 logger.info(`Execution of  ${name} Started.`);
@@ -29,8 +32,6 @@ logger.info(`Execution of  ${name} Started.`);
 //   "gid://shopify/Publication/248231526742",
 //   "2024-09-23T02:31:51Z"
 // );
-
-//addProductSet();
 
 // const result = addProductSet(
 //   [
@@ -86,9 +87,17 @@ logger.info(`Execution of  ${name} Started.`);
 //loadAllEKroducts();
 
 // loadJsonFile("S0671265757.json").then((data) => {
-//   getChatCompletion(data).then((result) => {
+//   categoryConfirmation(data).then((result) => {
+//     console.log(result);
+//   });
+
+//   seoFriendlyTitle(data).then((result) => {
+//     console.log(result);
+//   });
+
+//   seoFriendlyDescription(data).then((result) => {
 //     console.log(result);
 //   });
 // });
 
-processAllScrappedFiles();
+//processAllScrappedFiles();
