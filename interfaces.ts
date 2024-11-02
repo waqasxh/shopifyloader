@@ -57,6 +57,22 @@ interface InventoryQuantity {
   quantity: number;
 }
 
+interface CollectionNode {
+  id: string;
+  title: string;
+  handle: string;
+  updatedAt: string;
+  sortOrder: string;
+}
+
+interface Edge {
+  node: CollectionNode;
+}
+
+interface Collections {
+  edges: Edge[];
+}
+
 // interface EkRowItem {
 //   descriptionHtml: string;
 //   files: Array<string>;
@@ -89,4 +105,7 @@ export {
   AddedProduct,
   FailedProduct,
   InventoryQuantity,
+  CollectionNode,
+  Edge,
+  Collections,
 };

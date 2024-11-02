@@ -17,10 +17,10 @@ import {
   InventoryQuantity,
 } from "../interfaces";
 
-const sourceCSVPath = "./source/ek/EKW_Inventory_feed_Export.csv";
-const targetCSVPath = "./source/products_import.csv";
-const successCSVPath = "./source/ek/processing_success.csv";
-const failCSVPath = "./source/ek/processing_fail.csv";
+const sourceCSVPathEK = "./source/ek/EKW_Inventory_feed_Export.csv";
+const targetCSVPathEK = "./source/products_import.csv";
+const successCSVPathEK = "./source/ek/processing_success.csv";
+const failCSVPathEK = "./source/ek/processing_fail.csv";
 
 let currentHandle = "first-handle";
 
@@ -120,7 +120,7 @@ const targetHeaders = [
 const processEKFile = (): Array<object> => {
   let records: Array<object> = new Array<object>();
   const parser = fs
-    .createReadStream(sourceCSVPath)
+    .createReadStream(sourceCSVPathEK)
     .pipe(parseAsync({ delimiter: ",", columns: true }))
     .on("data", function (row) {
       logger.info(row);
@@ -133,7 +133,7 @@ const processEKFile = (): Array<object> => {
 const processEKFileEx = (): Array<ProductSet> => {
   let productSetList: ProductSet[] = [];
 
-  if (!fs.existsSync(sourceCSVPath)) {
+  if (!fs.existsSync(sourceCSVPathEK)) {
     return productSetList;
   }
 
@@ -143,9 +143,9 @@ const processEKFileEx = (): Array<ProductSet> => {
   let newProductSet = {} as ProductSet;
 
   let previousProducts: AddedProduct[] =
-    previouslyAddedProducts(successCSVPath);
+    previouslyAddedProducts(successCSVPathEK);
 
-  const fileContent = fs.readFileSync(sourceCSVPath, "utf8");
+  const fileContent = fs.readFileSync(sourceCSVPathEK, "utf8");
   const rows = parseSync(fileContent, {
     delimiter: ",",
     columns: true,
@@ -228,7 +228,7 @@ const processEKFileEx = (): Array<ProductSet> => {
       newProductSet = {} as ProductSet;
 
       newProductSet.collections = [
-        //"gid://shopify/Collection/631112204630", //Home page
+        //"gid://shopify/Collection/631112204630", //load collection(s) against each product from shopify store
       ];
 
       newProductSet.descriptionHtml = row["Body HTML"];
@@ -328,13 +328,13 @@ const processEKFileEx = (): Array<ProductSet> => {
 
 const convertAndExportFile = async (): Promise<void> => {
   const parser = fs
-    .createReadStream(sourceCSVPath)
+    .createReadStream(sourceCSVPathEK)
     .pipe(parseAsync({ columns: true, trim: true }));
 
   const transformer = stringify({ header: true, columns: targetHeaders });
 
   //write the transformed data to the target CSV file
-  const writeStream = fs.createWriteStream(targetCSVPath);
+  const writeStream = fs.createWriteStream(targetCSVPathEK);
   transformer.pipe(writeStream);
 
   parser.on("data", (row: any) => {
@@ -578,11 +578,11 @@ async function loadAllEKroducts(): Promise<void> {
   }
 
   if (successProductList.length > 0) {
-    writeAddedProductToCSV(successProductList, successCSVPath);
+    writeAddedProductToCSV(successProductList, successCSVPathEK);
   }
 
   if (failedProductList.length > 0) {
-    writeFailedProductToCSV(failedProductList, failCSVPath);
+    writeFailedProductToCSV(failedProductList, failCSVPathEK);
   }
 }
 

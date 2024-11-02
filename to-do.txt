@@ -1,1 +1,6 @@
+EK
 - add variant quantity to productset mutation - issue pending with shopify
+- download collection data against loaded product from shopify before re-run for reconciliation of variants etc.
+
+Awasm
+- Load awasm products v1

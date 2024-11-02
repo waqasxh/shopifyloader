@@ -9,6 +9,7 @@ import {
   retrievProductById,
   unpublishProductById,
   addProductSet,
+  retrievAvailableCategories,
 } from "./processors/shopify";
 import { processAllScrappedFiles } from "./processors/awasm";
 import { loadJsonFile } from "./helper";
@@ -101,3 +102,69 @@ logger.info(`Execution of  ${name} Started.`);
 // });
 
 //processAllScrappedFiles();
+
+// retrievAvailableCategories().then((result) => {
+//   console.log(result);
+// });
+
+const result = addProductSet(
+  [
+    "gid://shopify/Collection/631220928854", //From API Call
+  ],
+  "<p>The 100 Series clipper is the perfect 9 piece home haircutting kit. Containing 4 clip on guide combs ranging from 3-13mm and a thumb adjustable taper lever for more precise cutting lenghts, the 10 series clipper gives you total control allowing for full haircuts.</p>", // Description from OpenAI Call
+  [
+    {
+      originalSource:
+        "https://images.avasam.com/?url=https://avasamnew.s3.amazonaws.com/live/GB010026/79233-917_0.jpg",
+    },
+    {
+      originalSource:
+        "https://images.avasam.com/?url=https://avasamnew.s3.amazonaws.com/live/GB010026/79233-917_13.jpg",
+    },
+    {
+      originalSource:
+        "https://images.avasam.com/?url=https://avasamnew.s3.amazonaws.com/live/GB010026/79233-917_12.jpg",
+    },
+  ],
+  "wahl-100-groomease-series-hair-clipper-men-black", //Handle generated from Code
+  [
+    {
+      name: "Color",
+      position: 1,
+      values: [
+        {
+          name: "Black",
+        },
+      ],
+    },
+  ],
+  "ACTIVE",
+  "Wahl 100 GroomEase Series Hair Clipper for Men - Black", //Title form Open AI Call
+  [
+    {
+      optionValues: [
+        {
+          optionName: "Color",
+          name: "Black",
+        },
+      ],
+      file: {
+        originalSource:
+          "https://images.avasam.com/?url=https://avasamnew.s3.amazonaws.com/live/GB010026/79233-917_0.jpg",
+      },
+      price: 22.99,
+      sku: "79233-917",
+      inventoryQuantities: {
+        locationId: "gid://shopify/Location/98172928342", //United Kingdom
+        name: "available",
+        quantity: 200,
+      },
+    },
+  ],
+  "Awasm"
+).then(({ data, errors, extensions }) => {
+  const id = data.productSet.product.id;
+  const handle = data.productSet.product.handle;
+});
+
+logger.info(`Execution of  ${name} Ended.`);

@@ -1,5 +1,5 @@
 import { createGraphQLClient } from "@shopify/graphql-client";
-import { ProductSet } from "../interfaces";
+import { ProductSet, CollectionNode, Edge, Collections } from "../interfaces";
 
 const shopifyAccessToken = process.env.SHOPIFY_ACCCESS_TOKEN;
 const shopifyAGraphQLUrl = process.env.SHOPIFY_GRAPHQL_URL;
@@ -31,6 +31,31 @@ async function retrievProductById(id: string): Promise<any> {
       productId: id,
     },
   });
+}
+
+async function retrievAvailableCategories(): Promise<CollectionNode[]> {
+  const query = `query {
+    collections(first: 25) {
+      edges {
+        node {
+          id
+          title
+          handle
+          updatedAt
+          sortOrder
+        }
+      }
+    }
+  }`;
+  const { data, errors, extensions } = await client.request(query);
+
+  const collections: Collections = data.collections;
+
+  const collectionNodes: CollectionNode[] = collections.edges.map(
+    (edge) => edge.node
+  );
+
+  return collectionNodes;
 }
 
 async function unpublishProductById(
@@ -196,4 +221,5 @@ export {
   addProductSet,
   addProductSetEx,
   publishProductById,
+  retrievAvailableCategories,
 };
