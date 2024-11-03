@@ -16,6 +16,7 @@ import {
   FailedProduct,
   InventoryQuantity,
 } from "../interfaces";
+import { writeAddedProductToCSV, writeFailedProductToCSV } from "../helper";
 
 const sourceCSVPathEK = "./source/ek/EKW_Inventory_feed_Export.csv";
 const targetCSVPathEK = "./source/products_import.csv";
@@ -446,44 +447,6 @@ function transformRow(sourceRow: any): any {
   });
 
   return targetRow;
-}
-
-function writeAddedProductToCSV(
-  products: AddedProduct[],
-  fileName: string
-): void {
-  const csvHeaders = "Id,Handle,Title\n";
-  const csvRows = products
-    .map((product) => `${product.id},${product.handle},${product.title}`)
-    .join("\n");
-  const csvContent = csvHeaders + csvRows;
-
-  fs.writeFile(fileName, csvContent, "utf8", (error) => {
-    if (error) {
-      console.error("Error writing to Success CSV file:", error);
-    } else {
-      console.log(`CSV file "${fileName}" created successfully.`);
-    }
-  });
-}
-
-function writeFailedProductToCSV(
-  products: FailedProduct[],
-  fileName: string
-): void {
-  const csvHeaders = "Handle,Title\n";
-  const csvRows = products
-    .map((product) => `${product.handle},${product.title}`)
-    .join("\n");
-  const csvContent = csvHeaders + csvRows;
-
-  fs.writeFile(fileName, csvContent, "utf8", (error) => {
-    if (error) {
-      console.error("Error writing to Failed CSV file:", error);
-    } else {
-      console.log(`CSV file "${fileName}" created successfully.`);
-    }
-  });
 }
 
 function appendAddedProductToCSV(
