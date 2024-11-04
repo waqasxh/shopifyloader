@@ -12,7 +12,10 @@ import {
   replaceCommas,
   sanitizeScrappedFiles,
 } from "../helper";
-import { retrievAvailableCategories } from "./shopify";
+import {
+  retrievAvailableCategories,
+  updateProductTitleHandleById,
+} from "./shopify";
 import {
   categoryConfirmation,
   seoFriendlyTitle,
@@ -147,6 +150,22 @@ export async function checkScrappedFiles(): Promise<any> {
       writeLinksToFile(skipAwasmLinks, skipFiles);
     }
   });
+}
+
+export async function updateTitlesandHandles(): Promise<any> {
+  let loadedroducts: AddedProduct[] = loadAddedProducts(successCSVPathAwasm);
+  for (const loadedroduct of loadedroducts) {
+    let { data, errors, extensions } = await updateProductTitleHandleById(
+      loadedroduct.id,
+      loadedroduct.title,
+      loadedroduct.handle
+    );
+    if (data) {
+      console.log(data);
+    } else if (errors) {
+      console.log(`Error: ${errors}`);
+    }
+  }
 }
 
 const parseAwasmFile = async (input: any): Promise<ProductSet> => {

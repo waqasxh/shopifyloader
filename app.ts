@@ -14,6 +14,7 @@ import {
 import {
   processAllScrappedFiles,
   checkScrappedFiles,
+  updateTitlesandHandles,
 } from "./processors/awasm";
 import { loadJsonFile } from "./helper";
 
@@ -106,6 +107,8 @@ logger.info(`Execution of  ${name} Started.`);
 
 //processAllScrappedFiles();
 //checkScrappedFiles();
+
+updateTitlesandHandles();
 
 // retrievAvailableCategories().then((result) => {
 //   console.log(result);

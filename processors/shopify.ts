@@ -215,6 +215,37 @@ async function addProductSetEx(productSet: ProductSet): Promise<any> {
   return result;
 }
 
+async function updateProductTitleHandleById(
+  productId: string,
+  title: string,
+  handle: string
+): Promise<any> {
+  const mutation = `mutation updateProduct($input: ProductInput!) {
+      productUpdate(input: $input) {
+        product {
+          id   
+          title
+          handle      
+        }
+        userErrors {
+          message
+          field
+        }
+      }
+    }`;
+  const result = await client.request(mutation, {
+    variables: {
+      input: {
+        id: productId,
+        title: title,
+        handle: handle,
+      },
+    },
+  });
+
+  return result;
+}
+
 export {
   retrievProductById,
   unpublishProductById,
@@ -222,4 +253,5 @@ export {
   addProductSetEx,
   publishProductById,
   retrievAvailableCategories,
+  updateProductTitleHandleById,
 };
