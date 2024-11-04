@@ -10,6 +10,7 @@ import {
   removeExtraQuotes,
   removeAdditionalCharacters,
   replaceCommas,
+  sanitizeScrappedFiles,
 } from "../helper";
 import { retrievAvailableCategories } from "./shopify";
 import {
@@ -35,6 +36,7 @@ import { addProductSetEx, publishProductById } from "../processors/shopify";
 const successCSVPathAwasm = "./source/awasm/processing_success.csv";
 const failCSVPathAwasm = "./source/awasm/processing_fail.csv";
 const failAwasmLinks = "./source/awasm/failed_links.txt";
+const skipAwasmLinks = "./source/awasm/links_skip.txt";
 
 export async function processAllScrappedFiles(): Promise<any> {
   let successProductList: AddedProduct[] = [];
@@ -136,6 +138,14 @@ export async function processAllScrappedFiles(): Promise<any> {
         writeFailedProductToCSV(failedProductList, failCSVPathAwasm);
       }
     });
+  });
+}
+
+export async function checkScrappedFiles(): Promise<any> {
+  sanitizeScrappedFiles().then((skipFiles) => {
+    if (skipFiles.length > 0) {
+      writeLinksToFile(skipAwasmLinks, skipFiles);
+    }
   });
 }
 

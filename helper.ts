@@ -20,15 +20,12 @@ const loadJsonFile = async (fileName: string): Promise<any> => {
 
 const loadAllJsonFiles = async (): Promise<any[]> => {
   try {
-    // Read directory contents
     const files = await fs.promises.readdir(jsonFolderPath);
     const jsonFilesData: any[] = [];
 
-    // Iterate over each file
     for (const file of files) {
       const filePath = path.join(jsonFolderPath, file);
 
-      // Check if it's a JSON file
       if (path.extname(file) === ".json") {
         const fileContent = await fs.promises.readFile(filePath, "utf-8");
         const jsonData = JSON.parse(fileContent);
@@ -37,6 +34,33 @@ const loadAllJsonFiles = async (): Promise<any[]> => {
     }
 
     return jsonFilesData;
+  } catch (error) {
+    console.error("Error loading JSON files:", error);
+    throw error;
+  }
+};
+
+const sanitizeScrappedFiles = async (): Promise<string[]> => {
+  try {
+    const files = await fs.promises.readdir(jsonFolderPath);
+    const jsonFiles: string[] = [];
+
+    for (const file of files) {
+      const filePath = path.join(jsonFolderPath, file);
+
+      if (path.extname(file) === ".json") {
+        const fileContent = await fs.promises.readFile(filePath, "utf-8");
+        const jsonData = JSON.parse(fileContent);
+
+        const searchTerms = ["lubricant", "vaginal", "vagina", "anal"];
+        const isAnyFound = findWordsInJson(jsonData, searchTerms);
+        if (isAnyFound) {
+          jsonFiles.push(file);
+        }
+      }
+    }
+
+    return jsonFiles;
   } catch (error) {
     console.error("Error loading JSON files:", error);
     throw error;
@@ -139,6 +163,11 @@ function replaceCommas(str: string) {
   return str.replace(/,/g, " |");
 }
 
+function findWordsInJson(jsonData: any, searchTerms: string[]): boolean {
+  const jsonString = _.toLower(JSON.stringify(jsonData));
+  return searchTerms.some((term) => jsonString.includes(term));
+}
+
 export {
   loadJsonFile,
   loadAllJsonFiles,
@@ -150,4 +179,6 @@ export {
   removeExtraQuotes,
   removeAdditionalCharacters,
   replaceCommas,
+  findWordsInJson,
+  sanitizeScrappedFiles,
 };

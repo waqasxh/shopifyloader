@@ -11,7 +11,10 @@ import {
   addProductSet,
   retrievAvailableCategories,
 } from "./processors/shopify";
-import { processAllScrappedFiles } from "./processors/awasm";
+import {
+  processAllScrappedFiles,
+  checkScrappedFiles,
+} from "./processors/awasm";
 import { loadJsonFile } from "./helper";
 
 import {
@@ -101,7 +104,8 @@ logger.info(`Execution of  ${name} Started.`);
 //   });
 // });
 
-processAllScrappedFiles();
+//processAllScrappedFiles();
+//checkScrappedFiles();
 
 // retrievAvailableCategories().then((result) => {
 //   console.log(result);
