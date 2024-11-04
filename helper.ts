@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { AddedProduct, FailedProduct } from "./interfaces";
 import _ from "lodash";
+import { parse as parseSync } from "csv-parse/sync";
 
 const jsonFolderPath =
   "D:\\Projects\\Ecommerce\\QBCL\\AwasmScrapper\\ProductsJson\\";
@@ -43,13 +44,7 @@ const loadAllJsonFiles = async (): Promise<any[]> => {
 };
 
 function seoFriendlyUrlHandle(title: string) {
-  return _.toLower(
-    title
-      .trim()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-  );
+  return _.toLower(title.trim().replace(/\s+/g, "-").replace(/-+/g, "-"));
 }
 
 function writeLinksToFile(filename: string, links: string[]): void {
@@ -109,6 +104,41 @@ function writeFailedProductToCSV(
   });
 }
 
+const loadAddedProducts = (filePath: string): AddedProduct[] => {
+  const records: AddedProduct[] = [];
+
+  if (fs.existsSync(filePath)) {
+    const fileContent = fs.readFileSync(filePath, "utf8");
+    const rows = parseSync(fileContent, {
+      delimiter: ",",
+      columns: true,
+      skip_empty_lines: true,
+    });
+
+    for (const row of rows) {
+      records.push({
+        id: row["Id"],
+        handle: row["Handle"],
+        title: row["Title"],
+      });
+    }
+  }
+
+  return records;
+};
+
+function removeExtraQuotes(str: string): string {
+  return str.replace(/^"+|"+$/g, "");
+}
+
+function removeAdditionalCharacters(str: string): string {
+  return str.replace(/^```html\n/, "").replace(/\n```$/, "");
+}
+
+function replaceCommas(str: string) {
+  return str.replace(/,/g, " |");
+}
+
 export {
   loadJsonFile,
   loadAllJsonFiles,
@@ -116,4 +146,8 @@ export {
   writeLinksToFile,
   writeAddedProductToCSV,
   writeFailedProductToCSV,
+  loadAddedProducts,
+  removeExtraQuotes,
+  removeAdditionalCharacters,
+  replaceCommas,
 };

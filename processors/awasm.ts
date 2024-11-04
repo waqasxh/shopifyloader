@@ -6,12 +6,17 @@ import {
   writeLinksToFile,
   writeAddedProductToCSV,
   writeFailedProductToCSV,
+  loadAddedProducts,
+  removeExtraQuotes,
+  removeAdditionalCharacters,
+  replaceCommas,
 } from "../helper";
 import { retrievAvailableCategories } from "./shopify";
 import {
   categoryConfirmation,
   seoFriendlyTitle,
   seoFriendlyDescription,
+  seoFriendlyURLSlug,
 } from "./openai";
 import {
   ProductSet,
@@ -39,6 +44,8 @@ export async function processAllScrappedFiles(): Promise<any> {
 
   let newProductSet = {} as ProductSet;
 
+  let previousProducts: AddedProduct[] = loadAddedProducts(successCSVPathAwasm);
+
   loadAllJsonFiles().then((productsData) => {
     retrievAvailableCategories().then(async (collectionNodes) => {
       for (const productData of productsData) {
@@ -61,6 +68,14 @@ export async function processAllScrappedFiles(): Promise<any> {
           newProductSet = await parseAwasmFile(productData);
 
           newProductSet.collections = [collectionID];
+
+          let previousRecord = _.find(previousProducts, {
+            handle: newProductSet.handle,
+          });
+
+          if (previousRecord) {
+            newProductSet.id = previousRecord.id;
+          }
 
           try {
             await addProductSetEx(newProductSet).then(
@@ -109,7 +124,9 @@ export async function processAllScrappedFiles(): Promise<any> {
         }
       }
 
-      writeLinksToFile(failAwasmLinks, failedLinks);
+      if (failedLinks.length > 0) {
+        writeLinksToFile(failAwasmLinks, failedLinks);
+      }
 
       if (successProductList.length > 0) {
         writeAddedProductToCSV(successProductList, successCSVPathAwasm);
@@ -125,38 +142,39 @@ export async function processAllScrappedFiles(): Promise<any> {
 const parseAwasmFile = async (input: any): Promise<ProductSet> => {
   let seoTitle = await seoFriendlyTitle(input);
   let seoDescription = await seoFriendlyDescription(input);
+  let seoUrlSlug = await seoFriendlyURLSlug(input);
 
   let newProductSet = {} as ProductSet;
 
-  newProductSet.descriptionHtml = seoDescription.content;
-  newProductSet.title = seoTitle.content;
+  newProductSet.descriptionHtml = removeAdditionalCharacters(
+    seoDescription.content
+  );
+  newProductSet.title = replaceCommas(removeExtraQuotes(seoTitle.content));
 
   newProductSet.files = input.ImageUrls.map((link: string) => ({
     originalSource: link,
   }));
 
-  newProductSet.handle = seoFriendlyUrlHandle(input.Title);
+  newProductSet.handle = seoUrlSlug.content;
 
-  if (input.Specifications.Colour) {
-    const productOption1Value: ProductOptionValue = {
-      name: input.Specifications.Colour,
-    };
+  const productOption1Value: ProductOptionValue = {
+    name: input.Specifications.Colour ?? "Standard",
+  };
 
-    const productOption1: ProductOption = {
-      name: "Color",
-      position: 1,
-      values: [productOption1Value],
-    };
+  const productOption1: ProductOption = {
+    name: "Color",
+    position: 1,
+    values: [productOption1Value],
+  };
 
-    newProductSet.productOptions = [productOption1];
-  }
+  newProductSet.productOptions = [productOption1];
 
   newProductSet.status = "ACTIVE";
   newProductSet.vendor = "Awasm";
 
   const variantOptionValue1: VariantOptionValue = {
     optionName: "Color",
-    name: input.Specifications.Colour ?? "Default",
+    name: input.Specifications.Colour ?? "Standard",
   };
 
   const priceInput = input.Price.replace(/\*$/, "");

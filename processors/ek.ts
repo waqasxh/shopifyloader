@@ -16,7 +16,11 @@ import {
   FailedProduct,
   InventoryQuantity,
 } from "../interfaces";
-import { writeAddedProductToCSV, writeFailedProductToCSV } from "../helper";
+import {
+  writeAddedProductToCSV,
+  writeFailedProductToCSV,
+  loadAddedProducts,
+} from "../helper";
 
 const sourceCSVPathEK = "./source/ek/EKW_Inventory_feed_Export.csv";
 const targetCSVPathEK = "./source/products_import.csv";
@@ -143,8 +147,7 @@ const processEKFileEx = (): Array<ProductSet> => {
 
   let newProductSet = {} as ProductSet;
 
-  let previousProducts: AddedProduct[] =
-    previouslyAddedProducts(successCSVPathEK);
+  let previousProducts: AddedProduct[] = loadAddedProducts(successCSVPathEK);
 
   const fileContent = fs.readFileSync(sourceCSVPathEK, "utf8");
   const rows = parseSync(fileContent, {
@@ -466,29 +469,6 @@ function appendAddedProductToCSV(
     }
   });
 }
-
-const previouslyAddedProducts = (filePath: string): AddedProduct[] => {
-  const records: AddedProduct[] = [];
-
-  if (fs.existsSync(filePath)) {
-    const fileContent = fs.readFileSync(filePath, "utf8");
-    const rows = parseSync(fileContent, {
-      delimiter: ",",
-      columns: true,
-      skip_empty_lines: true,
-    });
-
-    for (const row of rows) {
-      records.push({
-        id: row["Id"],
-        handle: row["Handle"],
-        title: row["Title"],
-      });
-    }
-  }
-
-  return records;
-};
 
 async function loadAllEKroducts(): Promise<void> {
   let productSetList: ProductSet[] = processEKFileEx();
