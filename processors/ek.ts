@@ -23,7 +23,7 @@ import {
 } from "../helper";
 
 const sourceCSVPathEK = "./source/ek/EKW_Inventory_feed_Export.csv";
-const targetCSVPathEK = "./source/products_import.csv";
+const targetCSVPathEK = "./source/ek/products_import.csv";
 const successCSVPathEK = "./source/ek/processing_success.csv";
 const failCSVPathEK = "./source/ek/processing_fail.csv";
 
