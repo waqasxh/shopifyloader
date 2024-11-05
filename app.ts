@@ -17,12 +17,15 @@ import {
   updateTitlesandHandles,
 } from "./processors/awasm";
 import { loadJsonFile } from "./helper";
-
 import {
   categoryConfirmation,
   seoFriendlyTitle,
   seoFriendlyDescription,
 } from "./processors/openai";
+import {
+  processLoadedProducts,
+  loadProductsDataFromFile,
+} from "./processors/processor";
 
 let name: string = "Shopify Loader";
 logger.info(`Execution of  ${name} Started.`);
@@ -108,7 +111,7 @@ logger.info(`Execution of  ${name} Started.`);
 //processAllScrappedFiles();
 //checkScrappedFiles();
 
-updateTitlesandHandles();
+//pdateTitlesandHandles();
 
 // retrievAvailableCategories().then((result) => {
 //   console.log(result);
@@ -175,3 +178,7 @@ updateTitlesandHandles();
 // });
 
 //logger.info(`Execution of  ${name} Ended.`);
+
+//processLoadedProducts();
+
+loadProductsDataFromFile();

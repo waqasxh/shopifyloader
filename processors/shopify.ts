@@ -26,11 +26,61 @@ async function retrievProductById(id: string): Promise<any> {
         status
       }
     }`;
-  const { data, errors, extensions } = await client.request(query, {
+  const result = await client.request(query, {
     variables: {
       productId: id,
     },
   });
+
+  return result;
+}
+
+async function retrievProducts(
+  count: number,
+  cursor: string | null
+): Promise<any> {
+  const query = `query retrieveProducts ($count:Int!, $cursor:String)
+      {
+      products(first: $count, after: $cursor) {
+    edges {
+      node {
+        id
+        title
+        vendor
+        collections(first:$count) {
+            edges{
+                node{
+                    id
+                    title
+                }
+            }            
+        }
+        variants(first:$count) {
+            edges{
+                node{
+                    id
+                    title
+                    price
+                    sku
+                }
+            }            
+        }
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+    }
+  }
+    }`;
+  const result = await client.request(query, {
+    variables: {
+      count: count,
+      cursor: cursor,
+    },
+  });
+
+  return result;
 }
 
 async function retrievAvailableCategories(): Promise<CollectionNode[]> {
@@ -254,4 +304,5 @@ export {
   publishProductById,
   retrievAvailableCategories,
   updateProductTitleHandleById,
+  retrievProducts,
 };

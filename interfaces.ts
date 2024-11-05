@@ -73,6 +73,39 @@ interface Collections {
   edges: Edge[];
 }
 
+interface ProductNode {
+  id: string;
+  vendor: string;
+  collections: {
+    edges: { node: { id: string } }[];
+  };
+  variants: {
+    edges: { node: { id: string; sku: string } }[];
+  };
+}
+
+interface ProductResponse {
+  data: {
+    products: {
+      edges: {
+        node: ProductNode;
+        cursor: string;
+      }[];
+      pageInfo: {
+        hasNextPage: boolean;
+      };
+    };
+  };
+}
+
+interface Product {
+  productId: string;
+  vendor: string;
+  collectionIds: string;
+  variantIds: string;
+  variantSkus: string;
+}
+
 // interface EkRowItem {
 //   descriptionHtml: string;
 //   files: Array<string>;
@@ -108,4 +141,7 @@ export {
   CollectionNode,
   Edge,
   Collections,
+  ProductNode,
+  ProductResponse,
+  Product,
 };

@@ -348,11 +348,11 @@ const convertAndExportFile = async (): Promise<void> => {
 
   parser.on("end", () => {
     transformer.end();
-    console.log("CSV transformation completed.");
+    logger.info("CSV transformation completed.");
   });
 
   parser.on("error", (error) => {
-    console.error("Error processing CSV:", error);
+    logger.error("Error processing CSV:", error);
   });
 };
 
@@ -463,9 +463,9 @@ function appendAddedProductToCSV(
 
   fs.appendFile(fileName, csvRows, "utf8", (error) => {
     if (error) {
-      console.error("Error appending to CSV file:", error);
+      logger.error("Error appending to CSV file:", error);
     } else {
-      console.log(`Data appended to CSV file "${fileName}" successfully.`);
+      logger.info(`Data appended to CSV file "${fileName}" successfully.`);
     }
   });
 }

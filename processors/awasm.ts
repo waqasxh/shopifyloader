@@ -161,9 +161,9 @@ export async function updateTitlesandHandles(): Promise<any> {
       loadedroduct.handle
     );
     if (data) {
-      console.log(data);
+      logger.info(data);
     } else if (errors) {
-      console.log(`Error: ${errors}`);
+      logger.error(`Error: ${errors}`);
     }
   }
 }
