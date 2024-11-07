@@ -529,6 +529,25 @@ async function loadAllEKroducts(): Promise<void> {
   }
 }
 
+const reconsileQuantities = (): void => {
+  if (!fs.existsSync(sourceCSVPathEK)) {
+    return;
+  }
+
+  const fileContent = fs.readFileSync(sourceCSVPathEK, "utf8");
+  const rows = parseSync(fileContent, {
+    delimiter: ",",
+    columns: true,
+    skip_empty_lines: true,
+  });
+
+  for (const row of rows) {
+    if (currentHandle === row["Handle"]) {
+    } else {
+    }
+  }
+};
+
 export {
   processEKFile,
   convertAndExportFile,

@@ -102,31 +102,8 @@ interface Product {
   productId: string;
   vendor: string;
   collectionIds: string;
-  variantIds: string;
-  variantSkus: string;
+  variantDetails: string;
 }
-
-// interface EkRowItem {
-//   descriptionHtml: string;
-//   files: Array<string>;
-//   handle: string;
-//   options: Array<{
-//     name: string;
-//     values: Array<string>;
-//   }>;
-//   title: string;
-//   variants: Array<{
-//     options: Array<{
-//       optionName: string;
-//       name: string;
-//     }>;
-//     file: string;
-//     price: number;
-//     weight: number;
-//     sku: string;
-//     quantity: number;
-//   }>;
-// }
 
 export {
   ProductSet,

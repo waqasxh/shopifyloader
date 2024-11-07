@@ -10,8 +10,7 @@ export async function processLoadedProducts(): Promise<any> {
   let cursor: string | null = null;
 
   if (!fs.existsSync(current_inventry)) {
-    const headers =
-      "Product ID|Vendor|Collection IDs|Variant IDs|Variant SKUs|Cursor\n";
+    const headers = "Product ID|Vendor|Collection IDs|Variant Details|Cursor\n";
     fs.writeFileSync(current_inventry, headers);
   }
 
@@ -27,15 +26,27 @@ export async function processLoadedProducts(): Promise<any> {
       const collectionIds = product.collections.edges
         .map((collectionEdge) => collectionEdge.node.id)
         .join(", ");
-      const variantIds = product.variants.edges
-        .map((variantEdge) => variantEdge.node.id)
+
+      const variantDetails = product.variants.edges
+        .map((variantEdge) => {
+          const variantId = variantEdge.node.id;
+          const sku = variantEdge.node.sku;
+          return `${variantId}:${sku}`;
+        })
         .join(", ");
-      const variantSkus = product.variants.edges
-        .map((variantEdge) => variantEdge.node.sku)
-        .join(", ");
+
+      // const variantIds = product.variants.edges
+      //   .map((variantEdge) => variantEdge.node.id)
+      //   .join(", ");
+      // const variantSkus = product.variants.edges
+      //   .map((variantEdge) => variantEdge.node.sku)
+      //   .join(", ");
+
       const currentCursor = productEdge.cursor;
 
-      const productData = `${productId}|${vendor}|${collectionIds}|${variantIds}|${variantSkus}|${currentCursor}\n`;
+      //const productData = `${productId}|${vendor}|${collectionIds}|${variantIds}|${variantSkus}|${currentCursor}\n`;
+
+      const productData = `${productId}|${vendor}|${collectionIds}|${variantDetails}|${currentCursor}\n`;
 
       fs.appendFileSync(current_inventry, productData, { flag: "a" });
     });
@@ -62,15 +73,13 @@ export function loadProductsDataFromFile(): Product[] {
   const [header, ...dataLines] = lines;
 
   const products: Product[] = dataLines.map((line) => {
-    const [productId, vendor, collectionIds, variantIds, variantSkus] =
-      line.split("|");
+    const [productId, vendor, collectionIds, variantDetails] = line.split("|");
 
     return {
       productId: productId.trim(),
       vendor: vendor.trim(),
       collectionIds: collectionIds.trim(),
-      variantIds: variantIds.trim(),
-      variantSkus: variantSkus.trim(),
+      variantDetails: variantDetails.trim(),
     };
   });
 
