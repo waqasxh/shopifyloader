@@ -4,6 +4,7 @@ import {
   convertAndExportFile,
   processEKFileEx,
   loadAllEKroducts,
+  reconsileQuantities,
 } from "./processors/ek";
 import {
   retrievProductById,
@@ -30,9 +31,14 @@ import {
 let name: string = "Shopify Loader";
 logger.info(`Execution of  ${name} Started.`);
 
-//const records = processFile();
+//-------------------ek.ts-----------------
 
+//const records = processFile();
 //convertAndExportFile();
+//loadAllEKroducts();
+reconsileQuantities();
+
+//----------------shopify.ts---------------
 
 //retrievProductById("gid://shopify/Product/9179310391638");
 // unpublishProductById(
@@ -92,8 +98,6 @@ logger.info(`Execution of  ${name} Started.`);
 //   const handle = data.productSet.product.handle;
 // });
 
-//loadAllEKroducts();
-
 // loadJsonFile("S0671265757.json").then((data) => {
 //   categoryConfirmation(data).then((result) => {
 //     console.log(result);
@@ -108,10 +112,7 @@ logger.info(`Execution of  ${name} Started.`);
 //   });
 // });
 
-//processAllScrappedFiles();
-//checkScrappedFiles();
-
-//pdateTitlesandHandles();
+//updateTitlesandHandles();
 
 // retrievAvailableCategories().then((result) => {
 //   console.log(result);
@@ -177,8 +178,11 @@ logger.info(`Execution of  ${name} Started.`);
 //   const handle = data.productSet.product.handle;
 // });
 
-//logger.info(`Execution of  ${name} Ended.`);
+//-------------------awasm.ts-------------
 
+//processAllScrappedFiles();
+//checkScrappedFiles();
+
+//-----------------processor.ts------------
 //processLoadedProducts();
-
-loadProductsDataFromFile();
+//logger.info(`Execution of  ${name} Ended.`);

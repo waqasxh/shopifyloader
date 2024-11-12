@@ -105,6 +105,15 @@ interface Product {
   variantDetails: string;
 }
 
+interface InventoryLevelInput {
+  locationId: string;
+  availableQuantity: number;
+}
+interface VariantBulk {
+  id: string;
+  inventoryQuantities: [InventoryLevelInput];
+}
+
 export {
   ProductSet,
   File,
@@ -121,4 +130,6 @@ export {
   ProductNode,
   ProductResponse,
   Product,
+  VariantBulk,
+  InventoryLevelInput,
 };

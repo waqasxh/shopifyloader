@@ -1,4 +1,4 @@
-import { retrievProducts } from "./shopify";
+import { retrievProductsDetails } from "./shopify";
 import { ProductResponse, Product } from "../interfaces";
 import * as fs from "fs";
 import { logger } from "../logger";
@@ -15,7 +15,7 @@ export async function processLoadedProducts(): Promise<any> {
   }
 
   while (hasNextPage) {
-    const result = await retrievProducts(10, cursor);
+    const result = await retrievProductsDetails(10, cursor);
     const graphqlJson: ProductResponse = result;
     const products = graphqlJson.data.products;
 
@@ -31,20 +31,11 @@ export async function processLoadedProducts(): Promise<any> {
         .map((variantEdge) => {
           const variantId = variantEdge.node.id;
           const sku = variantEdge.node.sku;
-          return `${variantId}:${sku}`;
+          return `${variantId}^${sku}`;
         })
         .join(", ");
 
-      // const variantIds = product.variants.edges
-      //   .map((variantEdge) => variantEdge.node.id)
-      //   .join(", ");
-      // const variantSkus = product.variants.edges
-      //   .map((variantEdge) => variantEdge.node.sku)
-      //   .join(", ");
-
       const currentCursor = productEdge.cursor;
-
-      //const productData = `${productId}|${vendor}|${collectionIds}|${variantIds}|${variantSkus}|${currentCursor}\n`;
 
       const productData = `${productId}|${vendor}|${collectionIds}|${variantDetails}|${currentCursor}\n`;
 

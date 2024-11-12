@@ -1,5 +1,11 @@
 import { createGraphQLClient } from "@shopify/graphql-client";
-import { ProductSet, CollectionNode, Edge, Collections } from "../interfaces";
+import {
+  ProductSet,
+  CollectionNode,
+  Edge,
+  Collections,
+  VariantBulk,
+} from "../interfaces";
 
 const shopifyAccessToken = process.env.SHOPIFY_ACCCESS_TOKEN;
 const shopifyAGraphQLUrl = process.env.SHOPIFY_GRAPHQL_URL;
@@ -35,7 +41,36 @@ async function retrievProductById(id: string): Promise<any> {
   return result;
 }
 
-async function retrievProducts(
+async function retrievProductByIdEx(id: string): Promise<any> {
+  const query = `query productWithId ($productId:ID!)
+      {
+      product(id: $productId) {
+        id
+        title
+        status
+        variants(first:25) {
+            edges{
+                node{
+                    id
+                    title
+                    price
+                    sku
+                }
+            }            
+        }
+      }
+    }
+`;
+  const result = await client.request(query, {
+    variables: {
+      productId: id,
+    },
+  });
+
+  return result;
+}
+
+async function retrievProductsDetails(
   count: number,
   cursor: string | null
 ): Promise<any> {
@@ -296,6 +331,39 @@ async function updateProductTitleHandleById(
   return result;
 }
 
+//Marked as Obselete
+async function updateProductVaraintQuantities(
+  productId: string,
+  variants: VariantBulk[]
+): Promise<any> {
+  const mutation = `mutation UpdateProductVariantsQuantityValuesInBulk($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+        product {
+          id
+          title          
+        }
+        productVariants {
+          id
+          title
+          price
+          sku
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`;
+  const result = await client.request(mutation, {
+    variables: {
+      productId: productId,
+      variants: variants,
+    },
+  });
+
+  return result;
+}
+
 export {
   retrievProductById,
   unpublishProductById,
@@ -304,5 +372,6 @@ export {
   publishProductById,
   retrievAvailableCategories,
   updateProductTitleHandleById,
-  retrievProducts,
+  retrievProductsDetails,
+  updateProductVaraintQuantities,
 };
