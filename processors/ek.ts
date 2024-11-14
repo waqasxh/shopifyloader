@@ -6,10 +6,11 @@ import { logger } from "../logger";
 import {
   addProductSetEx,
   publishProductById,
-  updateProductVaraintQuantities,
+  retrieVariantById,
+  activateInventryById,
 } from "../processors/shopify";
 import { loadProductsDataFromFile } from "./processor";
-import _ from "lodash";
+import _, { result } from "lodash";
 import {
   ProductSet,
   File,
@@ -20,19 +21,21 @@ import {
   AddedProduct,
   FailedProduct,
   InventoryQuantity,
-  VariantBulk,
-  InventoryLevelInput,
 } from "../interfaces";
 import {
   writeAddedProductToCSV,
   writeFailedProductToCSV,
   loadAddedProducts,
+  readLinesFromFile,
+  activateQuantities,
 } from "../helper";
 
 const sourceCSVPathEK = "./source/ek/EKW_Inventory_feed_Export.csv";
 const targetCSVPathEK = "./source/ek/products_import.csv";
 const successCSVPathEK = "./source/ek/processing_success.csv";
 const failCSVPathEK = "./source/ek/processing_fail.csv";
+const activatedSuccessEK = "./source/ek/activated_success.txt";
+const activatedFailEK = "./source/ek/activated_fail.txt";
 
 let currentHandle = "first-handle";
 
@@ -536,72 +539,15 @@ async function loadAllEKroducts(): Promise<void> {
   }
 }
 
-const reconsileQuantities = async (): Promise<void> => {
-  if (!fs.existsSync(sourceCSVPathEK)) {
-    return;
-  }
-
-  const fileContent = fs.readFileSync(sourceCSVPathEK, "utf8");
-  const feedsDataEK = parseSync(fileContent, {
-    delimiter: ",",
-    columns: true,
-    skip_empty_lines: true,
-  });
-
-  const productsData = loadProductsDataFromFile();
-  const productsDataEK = _.filter(productsData, { vendor: "EK" });
-
-  for (const productDataEK of productsDataEK) {
-    const variantsData = productDataEK.variantDetails
-      .split(", ")
-      .map((entry: any) => {
-        const [variantId, variantSKU] = entry.split("^");
-        return { variantId, variantSKU };
-      });
-
-    const variantsBulk: Array<VariantBulk> = new Array<VariantBulk>();
-
-    for (const variantData of variantsData) {
-      const feedDataEK = _.find(feedsDataEK, {
-        "Variant SKU": variantData.variantSKU,
-      });
-
-      const inventoryQuantity: InventoryLevelInput = {
-        locationId: "gid://shopify/Location/98172928342", //United Kingdom
-        availableQuantity: Number(feedDataEK["Variant Inventory Qty"]),
-      };
-
-      const variantBulk: VariantBulk = {
-        id: variantData.variantId,
-        inventoryQuantities: [inventoryQuantity],
-      };
-
-      variantsBulk.push(variantBulk);
-    }
-
-    try {
-      await updateProductVaraintQuantities(
-        productDataEK.productId,
-        variantsBulk
-      ).then(({ data, errors, extensions }) => {
-        if (data) {
-          logger.info("Updated ProductId");
-          logger.info(productDataEK.productId);
-          logger.info(data);
-        } else if (errors) {
-          logger.error("Product Update Errors");
-          logger.error(errors);
-          logger.error("Product Update Extensions");
-          logger.error(extensions);
-        }
-      });
-    } catch (e) {
-      logger.error("Exception");
-      logger.error(e);
-      logger.error("ProductId");
-      logger.error(productDataEK.productId);
-    }
-  }
+const activateQuantitiesEK = async (): Promise<void> => {
+  await activateQuantities(
+    "EK",
+    activatedSuccessEK,
+    activatedFailEK,
+    loadProductsDataFromFile,
+    retrieVariantById,
+    activateInventryById
+  );
 };
 
 export {
@@ -609,5 +555,5 @@ export {
   convertAndExportFile,
   processEKFileEx,
   loadAllEKroducts,
-  reconsileQuantities,
+  activateQuantitiesEK,
 };

@@ -4,7 +4,7 @@ import {
   convertAndExportFile,
   processEKFileEx,
   loadAllEKroducts,
-  reconsileQuantities,
+  activateQuantitiesEK,
 } from "./processors/ek";
 import {
   retrievProductById,
@@ -16,6 +16,7 @@ import {
   processAllScrappedFiles,
   checkScrappedFiles,
   updateTitlesandHandles,
+  activateQuantitiesAwasm,
 } from "./processors/awasm";
 import { loadJsonFile } from "./helper";
 import {
@@ -36,7 +37,8 @@ logger.info(`Execution of  ${name} Started.`);
 //const records = processFile();
 //convertAndExportFile();
 //loadAllEKroducts();
-reconsileQuantities();
+//reconsileQuantities();
+//activateQuantitiesEK();
 
 //----------------shopify.ts---------------
 
@@ -182,6 +184,7 @@ reconsileQuantities();
 
 //processAllScrappedFiles();
 //checkScrappedFiles();
+activateQuantitiesAwasm();
 
 //-----------------processor.ts------------
 //processLoadedProducts();

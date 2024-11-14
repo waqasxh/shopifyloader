@@ -331,7 +331,6 @@ async function updateProductTitleHandleById(
   return result;
 }
 
-//Marked as Obselete
 async function updateProductVaraintQuantities(
   productId: string,
   variants: VariantBulk[]
@@ -364,6 +363,51 @@ async function updateProductVaraintQuantities(
   return result;
 }
 
+async function retrieVariantById(id: string): Promise<any> {
+  const query = `query GetVariantDetails($variantId:ID!){
+  productVariant(id: $variantId) {
+    id
+    inventoryItem {
+      id
+      tracked      
+    }
+    displayName
+    inventoryQuantity
+  }
+}`;
+  const result = await client.request(query, {
+    variables: {
+      variantId: id,
+    },
+  });
+
+  return result;
+}
+
+async function activateInventryById(inventryId: string): Promise<any> {
+  const mutation = `mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
+  inventoryItemUpdate(id: $id, input: $input) {
+    inventoryItem {
+      id      
+      tracked         
+    }
+    userErrors {
+      message
+    }
+  }
+}`;
+  const result = await client.request(mutation, {
+    variables: {
+      id: inventryId,
+      input: {
+        tracked: true,
+      },
+    },
+  });
+
+  return result;
+}
+
 export {
   retrievProductById,
   unpublishProductById,
@@ -373,5 +417,6 @@ export {
   retrievAvailableCategories,
   updateProductTitleHandleById,
   retrievProductsDetails,
-  updateProductVaraintQuantities,
+  retrieVariantById,
+  activateInventryById,
 };

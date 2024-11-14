@@ -15,7 +15,7 @@ export async function processLoadedProducts(): Promise<any> {
   }
 
   while (hasNextPage) {
-    const result = await retrievProductsDetails(10, cursor);
+    const result = await retrievProductsDetails(50, cursor);
     const graphqlJson: ProductResponse = result;
     const products = graphqlJson.data.products;
 

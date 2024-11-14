@@ -1,8 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
-import { AddedProduct, FailedProduct } from "./interfaces";
-import _ from "lodash";
+import { AddedProduct, FailedProduct, Product } from "./interfaces";
+import _, { Function } from "lodash";
 import { parse as parseSync } from "csv-parse/sync";
+import { logger } from "./logger";
 
 const jsonFolderPath =
   "D:\\Projects\\Ecommerce\\QBCL\\AwasmScrapper\\ProductsJson\\";
@@ -13,7 +14,7 @@ const loadJsonFile = async (fileName: string): Promise<any> => {
     const fileContent = await fs.promises.readFile(filePath, "utf-8");
     return JSON.parse(fileContent);
   } catch (error) {
-    console.error("Error loading JSON file:", error);
+    logger.error("Error loading JSON file:", error);
     throw error;
   }
 };
@@ -35,7 +36,7 @@ const loadAllJsonFiles = async (): Promise<any[]> => {
 
     return jsonFilesData;
   } catch (error) {
-    console.error("Error loading JSON files:", error);
+    logger.error("Error loading JSON files:", error);
     throw error;
   }
 };
@@ -62,7 +63,7 @@ const sanitizeScrappedFiles = async (): Promise<string[]> => {
 
     return jsonFiles;
   } catch (error) {
-    console.error("Error loading JSON files:", error);
+    logger.error("Error loading JSON files:", error);
     throw error;
   }
 };
@@ -83,9 +84,9 @@ function writeLinksToFile(filename: string, links: string[]): void {
   // Write failed links to the file
   fs.writeFile(filePath, content, (err) => {
     if (err) {
-      console.error("Error writing to file:", err);
+      logger.error("Error writing to file:", err);
     } else {
-      console.log("Failed links written to", filename);
+      logger.info("Failed links written to", filename);
     }
   });
 }
@@ -102,9 +103,9 @@ function writeAddedProductToCSV(
 
   fs.writeFile(fileName, csvContent, "utf8", (error) => {
     if (error) {
-      console.error("Error writing to Success CSV file:", error);
+      logger.error("Error writing to Success CSV file:", error);
     } else {
-      console.log(`CSV file "${fileName}" created successfully.`);
+      logger.info(`CSV file "${fileName}" created successfully.`);
     }
   });
 }
@@ -121,9 +122,9 @@ function writeFailedProductToCSV(
 
   fs.writeFile(fileName, csvContent, "utf8", (error) => {
     if (error) {
-      console.error("Error writing to Failed CSV file:", error);
+      logger.error("Error writing to Failed CSV file:", error);
     } else {
-      console.log(`CSV file "${fileName}" created successfully.`);
+      logger.info(`CSV file "${fileName}" created successfully.`);
     }
   });
 }
@@ -168,6 +169,111 @@ function findWordsInJson(jsonData: any, searchTerms: string[]): boolean {
   return searchTerms.some((term) => jsonString.includes(term));
 }
 
+function readLinesFromFile(filePath: string): string[] {
+  let retVal: string[] = [];
+  try {
+    const fileContent = fs.readFileSync(filePath, "utf-8");
+
+    retVal = fileContent.split("\n").map((line) => line.trim());
+  } catch {
+    //do some expeption handling
+  }
+  return retVal;
+}
+
+const reconsileQuantities = async (
+  sourceCSVPath: string,
+  vendor: string,
+  loadProductsDataFromFile: () => Product[],
+  retrieVariantById: (id: string) => Promise<any>
+): Promise<void> => {
+  if (!fs.existsSync(sourceCSVPath)) {
+    return;
+  }
+
+  const fileContent = fs.readFileSync(sourceCSVPath, "utf8");
+  const feedsDataEK = parseSync(fileContent, {
+    delimiter: ",",
+    columns: true,
+    skip_empty_lines: true,
+  });
+
+  const productsData = loadProductsDataFromFile();
+  const productsDataEK = _.filter(productsData, { vendor: vendor });
+
+  for (const productDataEK of productsDataEK) {
+    const variantsData = productDataEK.variantDetails
+      .split(", ")
+      .map((entry: any) => {
+        const [variantId, variantSKU] = entry.split("^");
+        return { variantId, variantSKU };
+      });
+
+    for (const variantData of variantsData) {
+      const feedDataEK = _.find(feedsDataEK, {
+        "Variant SKU": variantData.variantSKU,
+      });
+
+      var result = await retrieVariantById(variantData.variantId);
+      logger.info(result.data);
+    }
+
+    try {
+    } catch (e) {}
+  }
+};
+
+const activateQuantities = async (
+  vendor: string,
+  activatedSuccess: string,
+  activatedFail: string,
+  loadProductsDataFromFile: () => Product[],
+  retrieVariantById: (id: string) => Promise<any>,
+  activateInventryById: (inventryId: string) => Promise<any>
+): Promise<void> => {
+  const productsData = loadProductsDataFromFile();
+  const productsDataVendor = _.filter(productsData, { vendor: vendor });
+
+  for (const productDataVendor of productsDataVendor) {
+    const variantsData = productDataVendor.variantDetails
+      .split(", ")
+      .map((entry: any) => {
+        const [variantId, variantSKU] = entry.split("^");
+        return { variantId, variantSKU };
+      });
+    let previousVariants = readLinesFromFile(activatedSuccess);
+
+    for (const variantData of variantsData) {
+      const previousVariant = _.includes(
+        previousVariants,
+        variantData.variantId
+      );
+      if (!previousVariant) {
+        let variantResult = await retrieVariantById(variantData.variantId);
+        if (variantResult.data) {
+          let inventryItemId: string =
+            variantResult.data.productVariant.inventoryItem.id;
+          try {
+            let activationResult = await activateInventryById(inventryItemId);
+            logger.info(`Inventry Item Id: ${inventryItemId}`);
+
+            fs.appendFileSync(activatedSuccess, variantData.variantId + "\n", {
+              flag: "a",
+            });
+          } catch (e) {
+            logger.error(`Exception: ${e}`);
+            logger.error(`Inventry Item Id: ${inventryItemId}`);
+
+            fs.appendFileSync(activatedFail, variantData.variantId + "\n", {
+              flag: "a",
+            });
+          }
+        }
+      }
+    }
+  }
+};
+
 export {
   loadJsonFile,
   loadAllJsonFiles,
@@ -181,4 +287,6 @@ export {
   replaceCommas,
   findWordsInJson,
   sanitizeScrappedFiles,
+  readLinesFromFile,
+  activateQuantities,
 };

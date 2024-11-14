@@ -11,10 +11,13 @@ import {
   removeAdditionalCharacters,
   replaceCommas,
   sanitizeScrappedFiles,
+  activateQuantities,
 } from "../helper";
 import {
   retrievAvailableCategories,
   updateProductTitleHandleById,
+  retrieVariantById,
+  activateInventryById,
 } from "./shopify";
 import {
   categoryConfirmation,
@@ -35,11 +38,14 @@ import {
 } from "../interfaces";
 import _ from "lodash";
 import { addProductSetEx, publishProductById } from "../processors/shopify";
+import { loadProductsDataFromFile } from "./processor";
 
 const successCSVPathAwasm = "./source/awasm/processing_success.csv";
 const failCSVPathAwasm = "./source/awasm/processing_fail.csv";
 const failAwasmLinks = "./source/awasm/failed_links.txt";
 const prohibitedAwasmLinks = "./source/awasm/prohibited_links.txt";
+const activatedSuccessAwasm = "./source/awasm/activated_success.txt";
+const activatedFailAwasm = "./source/awasm/activated_fail.txt";
 
 export async function processAllScrappedFiles(): Promise<any> {
   let successProductList: AddedProduct[] = [];
@@ -239,4 +245,15 @@ const parseAwasmFile = async (input: any): Promise<ProductSet> => {
   newProductSet.variants = [newVariant];
 
   return newProductSet;
+};
+
+export const activateQuantitiesAwasm = async (): Promise<void> => {
+  await activateQuantities(
+    "Awasm",
+    activatedSuccessAwasm,
+    activatedFailAwasm,
+    loadProductsDataFromFile,
+    retrieVariantById,
+    activateInventryById
+  );
 };
