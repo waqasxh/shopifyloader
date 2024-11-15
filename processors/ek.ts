@@ -4,6 +4,7 @@ import { parse as parseSync } from "csv-parse/sync";
 import { stringify } from "csv-stringify";
 import { logger } from "../logger";
 import {
+  addProductSet,
   addProductSetEx,
   publishProductById,
   retrieVariantById,
@@ -21,6 +22,7 @@ import {
   AddedProduct,
   FailedProduct,
   InventoryQuantity,
+  ProductSetEx,
 } from "../interfaces";
 import {
   writeAddedProductToCSV,
@@ -28,6 +30,8 @@ import {
   loadAddedProducts,
   readLinesFromFile,
   activateQuantities,
+  loadAddedProductsFromCSV,
+  loadFailedProductsFromCSV,
 } from "../helper";
 
 const sourceCSVPathEK = "./source/ek/EKW_Inventory_feed_Export.csv";
@@ -155,7 +159,7 @@ const processEKFileEx = (): Array<ProductSet> => {
   let currentOption1 = "first-option1";
   let currentOption2 = "first-option2";
 
-  let newProductSet = {} as ProductSet;
+  let productSet = {} as ProductSet;
 
   let previousProducts: AddedProduct[] = loadAddedProducts(successCSVPathEK);
 
@@ -172,28 +176,24 @@ const processEKFileEx = (): Array<ProductSet> => {
         originalSource: row["Variant Image"],
       };
 
-      if (!_.find(newProductSet.files, newFile)) {
-        newProductSet.files.push(newFile);
+      if (!_.find(productSet.files, newFile)) {
+        productSet.files.push(newFile);
       }
 
       const productOption1Value: ProductOptionValue = {
         name: row["Option1 Value"],
       };
 
-      if (
-        !_.find(newProductSet.productOptions[0].values, productOption1Value)
-      ) {
-        newProductSet.productOptions[0].values.push(productOption1Value);
+      if (!_.find(productSet.productOptions[0].values, productOption1Value)) {
+        productSet.productOptions[0].values.push(productOption1Value);
       }
 
       const productOption2Value: ProductOptionValue = {
         name: row["Option2 Value"],
       };
 
-      if (
-        !_.find(newProductSet.productOptions[1].values, productOption2Value)
-      ) {
-        newProductSet.productOptions[1].values.push(productOption2Value);
+      if (!_.find(productSet.productOptions[1].values, productOption2Value)) {
+        productSet.productOptions[1].values.push(productOption2Value);
       }
       const variantOptionValue1: VariantOptionValue = {
         optionName: row["Option1 Name"],
@@ -233,27 +233,27 @@ const processEKFileEx = (): Array<ProductSet> => {
         inventoryPolicy: "DENY",
       };
 
-      newProductSet.variants.push(newVariant);
+      productSet.variants.push(newVariant);
     } else {
       if (currentHandle !== "first-handle") {
-        productSetList.push(newProductSet);
+        productSetList.push(productSet);
       }
 
-      newProductSet = {} as ProductSet;
+      productSet = {} as ProductSet;
 
-      newProductSet.collections = [
+      productSet.collections = [
         //"gid://shopify/Collection/631112204630", //load collection(s) against each product from shopify store
       ];
 
-      newProductSet.descriptionHtml = row["Body HTML"];
+      productSet.descriptionHtml = row["Body HTML"];
 
       const newFile: File = {
         originalSource: row["Variant Image"],
       };
 
-      newProductSet.files = [newFile];
+      productSet.files = [newFile];
 
-      newProductSet.handle = row["Handle"];
+      productSet.handle = row["Handle"];
 
       const productOption1Value: ProductOptionValue = {
         name: row["Option1 Value"],
@@ -275,11 +275,11 @@ const processEKFileEx = (): Array<ProductSet> => {
         values: [productOption2Value],
       };
 
-      newProductSet.productOptions = [productOption1];
-      newProductSet.productOptions.push(productOption2);
+      productSet.productOptions = [productOption1];
+      productSet.productOptions.push(productOption2);
 
-      newProductSet.status = "ACTIVE";
-      newProductSet.title = row["Title"];
+      productSet.status = "ACTIVE";
+      productSet.title = row["Title"];
 
       const variantOptionValue1: VariantOptionValue = {
         optionName: row["Option1 Name"],
@@ -319,16 +319,16 @@ const processEKFileEx = (): Array<ProductSet> => {
         inventoryPolicy: "DENY",
       };
 
-      newProductSet.variants = [newVariant];
+      productSet.variants = [newVariant];
 
-      newProductSet.vendor = "EK";
+      productSet.vendor = "EK";
 
       let previousRecord = _.find(previousProducts, {
         handle: row["Handle"],
       });
 
       if (previousRecord) {
-        newProductSet.id = previousRecord.id;
+        productSet.id = previousRecord.id;
       }
 
       currentHandle = row["Handle"];
@@ -480,53 +480,51 @@ function appendAddedProductToCSV(
   });
 }
 
-async function loadAllEKroducts(): Promise<void> {
+async function loadAllEKProducts(): Promise<void> {
   let productSetList: ProductSet[] = processEKFileEx();
   let successProductList: AddedProduct[] = [];
   let failedProductList: FailedProduct[] = [];
 
-  for (const newProductSet of productSetList) {
+  for (const productSet of productSetList) {
     try {
-      await addProductSetEx(newProductSet).then(
-        ({ data, errors, extensions }) => {
-          if (data) {
-            logger.info("New ProductSet");
-            logger.info(newProductSet);
-            logger.info("ProductSet Result");
-            logger.info(data);
+      const { data, errors, extensions } = await addProductSet(productSet);
 
-            if (!newProductSet.id) {
-              successProductList.push({
-                id: data.productSet.product.id,
-                handle: data.productSet.product.handle,
-                title: data.productSet.product.title,
-              });
-            }
-            publishProductById(
-              data.productSet.product.id,
-              "gid://shopify/Publication/248231526742"
-            );
-          } else if (errors) {
-            failedProductList.push({
-              handle: newProductSet.handle,
-              title: newProductSet.title,
-            });
-            logger.error("ProductSet Errors");
-            logger.error(errors);
-            logger.error("ProductSet Extensions");
-            logger.error(extensions);
-          }
+      if (data) {
+        logger.info(`ProductSet: ${productSet}`);
+        logger.info("Result:");
+        logger.info(data);
+
+        if (!productSet.id) {
+          successProductList.push({
+            id: data.productSet.product.id,
+            handle: data.productSet.product.handle,
+            title: data.productSet.product.title,
+          });
         }
-      );
+
+        await publishProductById(
+          data.productSet.product.id,
+          "gid://shopify/Publication/248231526742"
+        );
+      } else if (errors) {
+        failedProductList.push({
+          handle: productSet.handle,
+          title: productSet.title,
+        });
+        logger.error("Errors:");
+        logger.error(errors);
+        logger.error("Extensions:");
+        logger.error(extensions);
+      }
     } catch (e) {
       failedProductList.push({
-        handle: newProductSet.handle,
-        title: newProductSet.title,
+        handle: productSet.handle,
+        title: productSet.title,
       });
-      logger.error("Exception");
+      logger.error("Exception:");
       logger.error(e);
-      logger.error("ProductSet");
-      logger.error(newProductSet);
+      logger.error("ProductSet:");
+      logger.error(productSet);
     }
   }
 
@@ -550,10 +548,154 @@ const activateQuantitiesEK = async (): Promise<void> => {
   );
 };
 
+async function loadAllEKProductsEX(): Promise<void> {
+  let productSetList: ProductSet[] = processEKFileEx();
+  let successProductList: AddedProduct[] =
+    loadAddedProductsFromCSV(successCSVPathEK);
+  let failedProductList: FailedProduct[] =
+    loadFailedProductsFromCSV(failCSVPathEK);
+
+  for (const productSet of productSetList) {
+    if (productSet.id) {
+      const productSetEx = transformProductSetToEx(productSet);
+      try {
+        const { data, errors, extensions } = await addProductSetEx(
+          productSetEx
+        );
+
+        if (data) {
+          logger.info(`ProductSet: ${productSet}`);
+          logger.info("Result:");
+          logger.info(data);
+        } else if (errors) {
+          addFailedProductIfUnique(failedProductList, {
+            handle: productSet.handle,
+            title: productSet.title,
+          });
+          logger.error("Errors:");
+          logger.error(errors);
+          logger.error("Extensions:");
+          logger.error(extensions);
+        }
+      } catch (e) {
+        addFailedProductIfUnique(failedProductList, {
+          handle: productSet.handle,
+          title: productSet.title,
+        });
+        logger.error("Exception:");
+        logger.error(e);
+        logger.error("ProductSet:");
+        logger.error(productSet);
+      }
+    } else {
+      try {
+        const { data, errors, extensions } = await addProductSet(productSet);
+
+        if (data) {
+          logger.info(`ProductSet: ${productSet}`);
+          logger.info("Result:");
+          logger.info(data);
+
+          if (!productSet.id) {
+            addAddedProductIfUnique(successProductList, {
+              id: data.productSet.product.id,
+              handle: data.productSet.product.handle,
+              title: data.productSet.product.title,
+            });
+          }
+
+          for (const variantNode of data.productSet.product.variants.edges) {
+            const variantId = variantNode.node.id;
+            let variantResult = await retrieVariantById(variantId);
+            if (variantResult.data) {
+              let inventryItemId: string =
+                variantResult.data.productVariant.inventoryItem.id;
+              try {
+                let activationResult = await activateInventryById(
+                  inventryItemId
+                );
+                logger.info(`Inventry Item Id: ${inventryItemId}`);
+              } catch (e) {
+                logger.error(`Exception: ${e}`);
+                logger.error(`Inventry Item Id: ${inventryItemId}`);
+              }
+            }
+          }
+          publishProductById(
+            data.productSet.product.id,
+            "gid://shopify/Publication/248231526742"
+          );
+        } else if (errors) {
+          addFailedProductIfUnique(failedProductList, {
+            handle: productSet.handle,
+            title: productSet.title,
+          });
+          logger.error("Errors:");
+          logger.error(errors);
+          logger.error("Extensions:");
+          logger.error(extensions);
+        }
+      } catch (e) {
+        addFailedProductIfUnique(failedProductList, {
+          handle: productSet.handle,
+          title: productSet.title,
+        });
+
+        logger.error("Exception:");
+        logger.error(e);
+        logger.error("ProductSet:");
+        logger.error(productSet);
+      }
+    }
+  }
+
+  if (successProductList.length > 0) {
+    writeAddedProductToCSV(successProductList, successCSVPathEK);
+  }
+
+  if (failedProductList.length > 0) {
+    writeFailedProductToCSV(failedProductList, failCSVPathEK);
+  }
+}
+
+function transformProductSetToEx(productSet: ProductSet): ProductSetEx {
+  return {
+    id: productSet.id,
+    productOptions: productSet.productOptions,
+    variants: productSet.variants.map((variant) => ({
+      inventoryQuantities: variant.inventoryQuantities,
+      optionValues: variant.optionValues,
+    })),
+  };
+}
+
+function addAddedProductIfUnique(
+  addedProducts: AddedProduct[],
+  newProduct: AddedProduct
+): void {
+  const exists = addedProducts.some((product) => product.id === newProduct.id);
+  if (!exists) {
+    addedProducts.push(newProduct);
+  }
+}
+
+function addFailedProductIfUnique(
+  failedProducts: FailedProduct[],
+  newProduct: FailedProduct
+): void {
+  const exists = failedProducts.some(
+    (product) => product.handle === newProduct.handle
+  );
+  if (!exists) {
+    failedProducts.push(newProduct);
+  }
+}
+
 export {
   processEKFile,
   convertAndExportFile,
   processEKFileEx,
-  loadAllEKroducts,
+  loadAllEKProducts,
   activateQuantitiesEK,
+  loadAllEKProductsEX,
 };

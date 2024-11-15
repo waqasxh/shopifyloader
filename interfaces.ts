@@ -11,6 +11,12 @@ interface ProductSet {
   vendor: string;
 }
 
+interface ProductSetEx {
+  id: string;
+  productOptions: Array<ProductOption>;
+  variants: Array<VariantEx>;
+}
+
 interface File {
   originalSource: string;
 }
@@ -33,6 +39,11 @@ interface Variant {
   compareAtPrice: number;
   inventoryQuantities: [InventoryQuantity];
   inventoryPolicy: string;
+}
+
+interface VariantEx {
+  optionValues: Array<VariantOptionValue>;
+  inventoryQuantities: [InventoryQuantity];
 }
 
 interface VariantOptionValue {
@@ -105,21 +116,23 @@ interface Product {
   variantDetails: string;
 }
 
-interface InventoryLevelInput {
-  locationId: string;
-  availableQuantity: number;
-}
-interface VariantBulk {
-  id: string;
-  inventoryQuantities: [InventoryLevelInput];
-}
+// interface InventoryLevelInput {
+//   locationId: string;
+//   availableQuantity: number;
+// }
+// interface VariantBulk {
+//   id: string;
+//   inventoryQuantities: [InventoryLevelInput];
+// }
 
 export {
   ProductSet,
+  ProductSetEx,
   File,
   ProductOption,
   ProductOptionValue,
   Variant,
+  VariantEx,
   VariantOptionValue,
   AddedProduct,
   FailedProduct,
@@ -130,6 +143,4 @@ export {
   ProductNode,
   ProductResponse,
   Product,
-  VariantBulk,
-  InventoryLevelInput,
 };

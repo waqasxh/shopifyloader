@@ -1,10 +1,10 @@
 import { createGraphQLClient } from "@shopify/graphql-client";
 import {
   ProductSet,
+  ProductSetEx,
   CollectionNode,
   Edge,
   Collections,
-  VariantBulk,
 } from "../interfaces";
 
 const shopifyAccessToken = process.env.SHOPIFY_ACCCESS_TOKEN;
@@ -48,7 +48,7 @@ async function retrievProductByIdEx(id: string): Promise<any> {
         id
         title
         status
-        variants(first:25) {
+        variants(first:50) {
             edges{
                 node{
                     id
@@ -211,44 +211,88 @@ async function publishProductById(
   });
 }
 
-async function addProductSet(
-  collections: any[],
-  bodyHtml: string,
-  files: any[],
-  handle: string,
-  productOptions: any[],
-  status: string,
-  title: string,
-  variants: any[],
-  vendor: string
-): Promise<any> {
+// async function addProductSet(
+//   collections: any[],
+//   bodyHtml: string,
+//   files: any[],
+//   handle: string,
+//   productOptions: any[],
+//   status: string,
+//   title: string,
+//   variants: any[],
+//   vendor: string
+// ): Promise<any> {
+//   const mutation = `mutation createProduct($productSet: ProductSetInput!, $synchronous: Boolean!) {
+//   productSet(synchronous: $synchronous, input: $productSet) {
+//     product {
+//       id
+//       handle
+//       media(first: 5) {
+//         nodes {
+//           id
+//           alt
+//           mediaContentType
+//           status
+//         }
+//       }
+//       variants(first: 5) {
+//         nodes {
+//           title
+//           price
+//           media(first: 5) {
+//             nodes {
+//               id
+//               alt
+//               mediaContentType
+//               status
+//             }
+//           }
+//         }
+//       }
+//     }
+//     userErrors {
+//       field
+//       message
+//     }
+//   }
+// }`;
+//   const result = await client.request(mutation, {
+//     variables: {
+//       synchronous: true,
+//       productSet: {
+//         collections: collections,
+//         descriptionHtml: bodyHtml,
+//         files: files,
+//         handle: handle,
+//         productOptions: productOptions,
+//         status: status,
+//         title: title,
+//         variants: variants,
+//         vendor: vendor,
+//       },
+//     },
+//   });
+
+//   return result;
+// }
+
+async function addProductSet(productSet: ProductSet): Promise<any> {
   const mutation = `mutation createProduct($productSet: ProductSetInput!, $synchronous: Boolean!) {
   productSet(synchronous: $synchronous, input: $productSet) {
     product {
       id
       handle
-      media(first: 5) {
-        nodes {
-          id
-          alt
-          mediaContentType
-          status
+      title
+      variants(first:50) {
+            edges{
+                node{
+                    id
+                    title
+                    price
+                    sku
+                }
+            }            
         }
-      }
-      variants(first: 5) {
-        nodes {
-          title
-          price
-          media(first: 5) {
-            nodes {
-              id
-              alt
-              mediaContentType
-              status
-            }
-          }
-        }
-      }
     }
     userErrors {
       field
@@ -259,30 +303,30 @@ async function addProductSet(
   const result = await client.request(mutation, {
     variables: {
       synchronous: true,
-      productSet: {
-        collections: collections,
-        descriptionHtml: bodyHtml,
-        files: files,
-        handle: handle,
-        productOptions: productOptions,
-        status: status,
-        title: title,
-        variants: variants,
-        vendor: vendor,
-      },
+      productSet: productSet,
     },
   });
 
   return result;
 }
 
-async function addProductSetEx(productSet: ProductSet): Promise<any> {
+async function addProductSetEx(productSet: ProductSetEx): Promise<any> {
   const mutation = `mutation createProduct($productSet: ProductSetInput!, $synchronous: Boolean!) {
   productSet(synchronous: $synchronous, input: $productSet) {
     product {
       id
       handle
       title
+      variants(first:50) {
+            edges{
+                node{
+                    id
+                    title
+                    price
+                    sku
+                }
+            }            
+        }
     }
     userErrors {
       field
@@ -331,37 +375,37 @@ async function updateProductTitleHandleById(
   return result;
 }
 
-async function updateProductVaraintQuantities(
-  productId: string,
-  variants: VariantBulk[]
-): Promise<any> {
-  const mutation = `mutation UpdateProductVariantsQuantityValuesInBulk($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-        product {
-          id
-          title          
-        }
-        productVariants {
-          id
-          title
-          price
-          sku
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }`;
-  const result = await client.request(mutation, {
-    variables: {
-      productId: productId,
-      variants: variants,
-    },
-  });
+// async function updateProductVaraintQuantities(
+//   productId: string,
+//   variants: VariantBulk[]
+// ): Promise<any> {
+//   const mutation = `mutation UpdateProductVariantsQuantityValuesInBulk($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+//       productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+//         product {
+//           id
+//           title
+//         }
+//         productVariants {
+//           id
+//           title
+//           price
+//           sku
+//         }
+//         userErrors {
+//           field
+//           message
+//         }
+//       }
+//     }`;
+//   const result = await client.request(mutation, {
+//     variables: {
+//       productId: productId,
+//       variants: variants,
+//     },
+//   });
 
-  return result;
-}
+//   return result;
+// }
 
 async function retrieVariantById(id: string): Promise<any> {
   const query = `query GetVariantDetails($variantId:ID!){

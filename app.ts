@@ -3,8 +3,9 @@ import {
   processEKFile,
   convertAndExportFile,
   processEKFileEx,
-  loadAllEKroducts,
+  loadAllEKProducts,
   activateQuantitiesEK,
+  loadAllEKProductsEX,
 } from "./processors/ek";
 import {
   retrievProductById,
@@ -36,9 +37,10 @@ logger.info(`Execution of  ${name} Started.`);
 
 //const records = processFile();
 //convertAndExportFile();
-//loadAllEKroducts();
+//loadAllEKProducts();
 //reconsileQuantities();
 //activateQuantitiesEK();
+loadAllEKProductsEX();
 
 //----------------shopify.ts---------------
 
@@ -184,7 +186,7 @@ logger.info(`Execution of  ${name} Started.`);
 
 //processAllScrappedFiles();
 //checkScrappedFiles();
-activateQuantitiesAwasm();
+//activateQuantitiesAwasm();
 
 //-----------------processor.ts------------
 //processLoadedProducts();

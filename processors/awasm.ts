@@ -37,7 +37,7 @@ import {
   InventoryQuantity,
 } from "../interfaces";
 import _ from "lodash";
-import { addProductSetEx, publishProductById } from "../processors/shopify";
+import { addProductSet, publishProductById } from "../processors/shopify";
 import { loadProductsDataFromFile } from "./processor";
 
 const successCSVPathAwasm = "./source/awasm/processing_success.csv";
@@ -89,7 +89,7 @@ export async function processAllScrappedFiles(): Promise<any> {
           }
 
           try {
-            await addProductSetEx(newProductSet).then(
+            await addProductSet(newProductSet).then(
               ({ data, errors, extensions }) => {
                 if (data) {
                   logger.info("New ProductSet");

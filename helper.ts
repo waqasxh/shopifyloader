@@ -110,6 +110,40 @@ function writeAddedProductToCSV(
   });
 }
 
+function loadAddedProductsFromCSV(fileName: string): AddedProduct[] {
+  if (!fs.existsSync(fileName)) {
+    console.warn(
+      `File "${fileName}" does not exist. Returning an empty products array.`
+    );
+    return [];
+  }
+
+  try {
+    const fileContent = fs.readFileSync(fileName, "utf8");
+
+    const lines = fileContent.trim().split("\n");
+
+    const [header, ...rows] = lines;
+
+    const expectedHeaders = ["Id", "Handle", "Title"];
+    const headers = header.split(",");
+    if (!expectedHeaders.every((h, i) => headers[i]?.trim() === h)) {
+      console.error(
+        "CSV header does not match the expected format. Returning an empty array."
+      );
+      return [];
+    }
+
+    return rows.map((row) => {
+      const [id, handle, title] = row.split(",").map((value) => value.trim());
+      return { id, handle, title };
+    });
+  } catch (error) {
+    console.error("Error reading the CSV file:", error);
+    return [];
+  }
+}
+
 function writeFailedProductToCSV(
   products: FailedProduct[],
   fileName: string
@@ -127,6 +161,45 @@ function writeFailedProductToCSV(
       logger.info(`CSV file "${fileName}" created successfully.`);
     }
   });
+}
+
+function loadFailedProductsFromCSV(fileName: string): FailedProduct[] {
+  if (!fs.existsSync(fileName)) {
+    console.warn(
+      `File "${fileName}" does not exist. Returning an empty products array.`
+    );
+    return []; // Return an empty array
+  }
+
+  try {
+    // Read the file content synchronously
+    const fileContent = fs.readFileSync(fileName, "utf8");
+
+    // Split the content into lines
+    const lines = fileContent.trim().split("\n");
+
+    // Extract the header and rows
+    const [header, ...rows] = lines;
+
+    // Validate the header
+    const expectedHeaders = ["Handle", "Title"];
+    const headers = header.split(",");
+    if (!expectedHeaders.every((h, i) => headers[i]?.trim() === h)) {
+      console.error(
+        "CSV header does not match the expected format. Returning an empty array."
+      );
+      return [];
+    }
+
+    // Parse rows into FailedProduct objects
+    return rows.map((row) => {
+      const [handle, title] = row.split(",").map((value) => value.trim());
+      return { handle, title };
+    });
+  } catch (error) {
+    console.error("Error reading the CSV file:", error);
+    return [];
+  }
 }
 
 const loadAddedProducts = (filePath: string): AddedProduct[] => {
@@ -180,48 +253,6 @@ function readLinesFromFile(filePath: string): string[] {
   }
   return retVal;
 }
-
-const reconsileQuantities = async (
-  sourceCSVPath: string,
-  vendor: string,
-  loadProductsDataFromFile: () => Product[],
-  retrieVariantById: (id: string) => Promise<any>
-): Promise<void> => {
-  if (!fs.existsSync(sourceCSVPath)) {
-    return;
-  }
-
-  const fileContent = fs.readFileSync(sourceCSVPath, "utf8");
-  const feedsDataEK = parseSync(fileContent, {
-    delimiter: ",",
-    columns: true,
-    skip_empty_lines: true,
-  });
-
-  const productsData = loadProductsDataFromFile();
-  const productsDataEK = _.filter(productsData, { vendor: vendor });
-
-  for (const productDataEK of productsDataEK) {
-    const variantsData = productDataEK.variantDetails
-      .split(", ")
-      .map((entry: any) => {
-        const [variantId, variantSKU] = entry.split("^");
-        return { variantId, variantSKU };
-      });
-
-    for (const variantData of variantsData) {
-      const feedDataEK = _.find(feedsDataEK, {
-        "Variant SKU": variantData.variantSKU,
-      });
-
-      var result = await retrieVariantById(variantData.variantId);
-      logger.info(result.data);
-    }
-
-    try {
-    } catch (e) {}
-  }
-};
 
 const activateQuantities = async (
   vendor: string,
@@ -289,4 +320,6 @@ export {
   sanitizeScrappedFiles,
   readLinesFromFile,
   activateQuantities,
+  loadAddedProductsFromCSV,
+  loadFailedProductsFromCSV,
 };
